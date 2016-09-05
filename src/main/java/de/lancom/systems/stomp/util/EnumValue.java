@@ -1,8 +1,16 @@
 package de.lancom.systems.stomp.util;
 
 /**
- * Created by fkneier on 18.08.16.
+ * Interface for enums with value.
+ *
+ * @param <T> enum type
  */
 public interface EnumValue<T> {
+
+    /**
+     * Get value.
+     *
+     * @return value
+     */
     T value();
 }

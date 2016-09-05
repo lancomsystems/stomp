@@ -8,16 +8,30 @@ import java.util.concurrent.locks.ReentrantLock;
 
 import de.lancom.systems.stomp.wire.frame.Frame;
 
+/**
+ * Output stream for stomp {@link Frame}.
+ */
 public class StompOutputStream extends OutputStream {
     private final ReentrantLock lock = new ReentrantLock();
     private final StompContext context;
     private final OutputStream outputStream;
 
+    /**
+     * Default cosntructor.
+     *
+     * @param context stomp context
+     * @param outputStream base output stream
+     */
     public StompOutputStream(final StompContext context, final OutputStream outputStream) {
         this.context = context;
         this.outputStream = outputStream;
     }
 
+    /**
+     * Write the given frame to the underlying output stream.
+     * @param frame frame
+     * @throws IOException if an I/O error occurs
+     */
     public void writeFrame(final Frame frame) throws IOException {
         try {
             lock.lock();

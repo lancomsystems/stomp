@@ -2,19 +2,36 @@ package de.lancom.systems.stomp.util;
 
 import java.util.concurrent.TimeUnit;
 
+import lombok.Getter;
+
 /**
- * Created by fkneier on 22.08.16.
+ * Utility class for timeout count down.
  */
 public class CountDown {
-    final long start;
-    long value;
 
+    @Getter
+    private final long start;
+
+    @Getter
+    private long amount;
+
+    /**
+     * Default constructor.
+     *
+     * @param amount amount
+     * @param unit time unit
+     */
     public CountDown(final long amount, final TimeUnit unit) {
         this.start = System.currentTimeMillis();
-        this.value = unit.toMillis(amount);
+        this.amount = unit.toMillis(amount);
     }
 
+    /**
+     * Calculate the remaining microseconds.
+     *
+     * @return remaining microseconds
+     */
     public long remaining() {
-        return value - (System.currentTimeMillis() - start);
+        return amount - (System.currentTimeMillis() - start);
     }
 }

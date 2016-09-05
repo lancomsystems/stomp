@@ -39,17 +39,18 @@ public class InputStreamTest {
 
     @Test
     public void sendMessage() throws Exception {
-        final StompUrl url = StompUrl.of("stomp://localhost:2000/queue/" + UUID.randomUUID().toString());
-        final Future<StompExchange> result = CLIENT.send(url, "Test");
-        final StompExchange exchange = result.get();
+        final StompUrl url = createStompUrl("/topic/%s", UUID.randomUUID());
+        final Future<StompFameExchange> result = CLIENT.send(url, "Test");
+        final StompFameExchange exchange = result.get();
 
+        assertThat(exchange, is(notNullValue()));
         assertThat(exchange.getResponse(), is(notNullValue()));
         assertThat(exchange.getResponse(), is(instanceOf(ReceiptFrame.class)));
     }
 
     @Test
     public void readQueue() throws Exception {
-        final StompUrl url = StompUrl.of("stomp://localhost:2000/queue/" + UUID.randomUUID().toString());
+        final StompUrl url = createStompUrl("/topic/%s", UUID.randomUUID());
         final String subscriptionId = UUID.randomUUID().toString();
         final String message = UUID.randomUUID().toString();
 
@@ -63,8 +64,8 @@ public class InputStreamTest {
                 }
             });
 
-            final Future<StompExchange> future = CLIENT.send(url, message);
-            final StompExchange exchange = future.get();
+            final Future<StompFameExchange> future = CLIENT.send(url, message);
+            final StompFameExchange exchange = future.get();
 
             assertThat(exchange, is(notNullValue()));
             assertThat(exchange.getResponse(), is(notNullValue()));
@@ -81,7 +82,7 @@ public class InputStreamTest {
 
     @Test
     public void readTopic() throws Exception {
-        final StompUrl url = StompUrl.of("stomp://localhost:2000/topic/" + UUID.randomUUID().toString());
+        final StompUrl url = createStompUrl("/topic/%s", UUID.randomUUID());
         final String subscriptionId1 = UUID.randomUUID().toString();
         final String subscriptionId2 = UUID.randomUUID().toString();
         final String message = UUID.randomUUID().toString();
@@ -104,8 +105,8 @@ public class InputStreamTest {
                 }
             });
 
-            final Future<StompExchange> future = CLIENT.send(url, message);
-            final StompExchange exchange = future.get();
+            final Future<StompFameExchange> future = CLIENT.send(url, message);
+            final StompFameExchange exchange = future.get();
 
             assertThat(exchange, is(notNullValue()));
             assertThat(exchange.getResponse(), is(notNullValue()));
@@ -124,4 +125,7 @@ public class InputStreamTest {
         }
     }
 
+    private StompUrl createStompUrl(final String path, final Object... parameters) {
+        return StompUrl.parse("stomp://localhost:" + BROKER.getBrokerPort() + String.format(path, parameters));
+    }
 }

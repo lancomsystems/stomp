@@ -5,12 +5,17 @@ import java.util.Objects;
 import de.lancom.systems.stomp.wire.frame.Frame;
 
 /**
- * Created by fkneier on 22.08.16.
+ * Implementation for {@link FrameSelector} using frame action.
  */
 public class ActionFrameSelector implements FrameSelector {
 
     private final String action;
 
+    /**
+     * Default constructor.
+     *
+     * @param action frame action
+     */
     public ActionFrameSelector(final String action) {
         this.action = action;
     }

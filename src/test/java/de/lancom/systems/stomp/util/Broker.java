@@ -1,5 +1,7 @@
 package de.lancom.systems.stomp.util;
 
+import java.net.ServerSocket;
+
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 
@@ -12,13 +14,17 @@ import org.apache.activemq.broker.BrokerService;
 public class Broker {
 
     @Getter
-    private final int brokerPort = 2000;
+    private int brokerPort;
 
     @Getter
     private BrokerService brokerService;
 
     @PostConstruct
     public void startBroker() throws Exception {
+        final ServerSocket serverSocket = new ServerSocket(0);
+        this.brokerPort = serverSocket.getLocalPort();
+        serverSocket.close();
+
         this.brokerService = new BrokerService();
         this.brokerService.addConnector("stomp+nio://localhost:" + brokerPort);
         this.brokerService.setPersistent(false);

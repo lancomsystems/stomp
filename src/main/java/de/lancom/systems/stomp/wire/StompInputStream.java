@@ -1,5 +1,7 @@
 package de.lancom.systems.stomp.wire;
 
+import static de.lancom.systems.stomp.util.StringUtil.isEmpty;
+
 import java.io.BufferedReader;
 import java.io.CharArrayWriter;
 import java.io.IOException;
@@ -14,6 +16,9 @@ import de.lancom.systems.stomp.util.CountDown;
 import de.lancom.systems.stomp.wire.frame.Frame;
 import lombok.extern.slf4j.Slf4j;
 
+/**
+ * Input stream for stomp {@link Frame}.
+ */
 @Slf4j
 public class StompInputStream extends InputStream {
     private final ReentrantLock lock = new ReentrantLock();
@@ -21,16 +26,36 @@ public class StompInputStream extends InputStream {
     private final InputStream inputStream;
     private final BufferedReader reader;
 
+    /**
+     * Default constructor.
+     *
+     * @param context stomp context
+     * @param inputStream input stream
+     */
     public StompInputStream(final StompContext context, final InputStream inputStream) {
         this.context = context;
         this.inputStream = inputStream;
         this.reader = new BufferedReader(new InputStreamReader(inputStream, StandardCharsets.UTF_8));
     }
 
+    /**
+     * Read frame from underlying input stream.
+     *
+     * @return frame or null if none is available
+     * @throws IOException if an I/O error occurs
+     */
     public Frame readFrame() throws IOException {
         return readFrame(0, TimeUnit.MILLISECONDS);
     }
 
+    /**
+     * Read frame from underlying input stream.
+     *
+     * @param timeout timout
+     * @param unit time unit
+     * @return frame or null if none was available in the given time
+     * @throws IOException if an I/O error occurs
+     */
     public Frame readFrame(final long timeout, final TimeUnit unit) throws IOException {
         final CountDown countDown = new CountDown(timeout, unit);
 
@@ -41,24 +66,31 @@ public class StompInputStream extends InputStream {
             if (locked) {
                 // read action
                 do {
-                    final long readStart = System.currentTimeMillis();
-                    String actionLine = null;
-                    while (reader.ready() && (actionLine = reader.readLine()) != null) {
-                        if (isEmpty(actionLine)) {
+                    while (reader.ready()) {
+                        final String line = reader.readLine();
+                        if (line == null) {
+                            break;
+                        }
+                        if (isEmpty(line)) {
                             continue;
                         } else {
-                            frame = context.createFrame(actionLine);
+                            frame = context.createFrame(line);
                             break;
                         }
                     }
                 } while (countDown.remaining() > 0 && frame == null);
 
                 if (frame != null) {
+
                     // read headers
-                    String headerLine = null;
-                    while (!isEmpty(headerLine = reader.readLine())) {
-                        final String[] parts = headerLine.split(":", 2);
-                        if (parts.length == 2 && frame != null) {
+                    while (true) {
+                        final String line = reader.readLine();
+                        if (isEmpty(line)) {
+                            break;
+                        }
+
+                        final String[] parts = line.split(":", 2);
+                        if (parts.length == 2) {
                             final String headerName = parts[0];
                             final String headerValue;
                             if (Objects.equals(frame.getAction(), StompAction.CONNECT.value())) {
@@ -96,7 +128,7 @@ public class StompInputStream extends InputStream {
                     }
                 }
             }
-        } catch (final Exception ex) {
+        } catch (final InterruptedException ex) {
             if (log.isErrorEnabled()) {
                 log.error("Error reading messages", ex);
             }
@@ -105,17 +137,6 @@ public class StompInputStream extends InputStream {
         }
 
         return frame;
-    }
-
-    private boolean isEmpty(final String value) {
-        if (value != null) {
-            for (int index = 0; index < value.length(); index++) {
-                if (!Character.isWhitespace(value.charAt(index))) {
-                    return false;
-                }
-            }
-        }
-        return true;
     }
 
     @Override
