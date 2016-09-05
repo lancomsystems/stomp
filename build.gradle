@@ -2,6 +2,9 @@ group 'de.lancom.systems.stomp'
 version '1.0-SNAPSHOT'
 
 apply plugin: 'java'
+apply plugin: 'checkstyle'
+apply plugin: 'findbugs'
+apply plugin: 'pmd'
 
 sourceCompatibility = 1.7
 
@@ -19,4 +22,21 @@ dependencies {
     testCompile group: 'junit', name: 'junit', version: '4.12'
     testCompile group: 'org.apache.activemq', name: 'activemq-stomp', version: '5.14.0'
     testCompile group: 'org.slf4j', name: 'slf4j-log4j12', version: '1.7.21'
+}
+
+project.pmd {
+    toolVersion = '5.5.1'
+    sourceSets = [sourceSets.main]
+    consoleOutput = true
+}
+
+project.findbugs {
+    toolVersion = '3.0.1'
+    sourceSets = [sourceSets.main]
+    excludeFilter = file('config/findbugs/exclude.xml')
+}
+
+project.checkstyle {
+    toolVersion = '7.1'
+    sourceSets = [sourceSets.main]
 }
