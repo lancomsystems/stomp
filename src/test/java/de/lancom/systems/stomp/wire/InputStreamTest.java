@@ -25,6 +25,8 @@ public class InputStreamTest {
     protected static final Broker BROKER = new Broker();
     protected static final StompClient CLIENT = new StompClient();
 
+    private static final int HOLDER_TIMEOUT_SECONDS = 2;
+
     @BeforeClass
     public static void startBroker() throws Exception {
         BROKER.startBroker();
@@ -71,7 +73,7 @@ public class InputStreamTest {
             assertThat(exchange.getResponse(), is(notNullValue()));
             assertThat(exchange.getResponse(), is(instanceOf(ReceiptFrame.class)));
 
-            final String result = holder.get(2, TimeUnit.SECONDS);
+            final String result = holder.get(HOLDER_TIMEOUT_SECONDS, TimeUnit.SECONDS);
 
             assertThat(result, is(notNullValue()));
             assertThat(result, is(equalTo(message)));
@@ -112,11 +114,11 @@ public class InputStreamTest {
             assertThat(exchange.getResponse(), is(notNullValue()));
             assertThat(exchange.getResponse(), is(instanceOf(ReceiptFrame.class)));
 
-            final String result1 = holder1.get(5, TimeUnit.SECONDS);
+            final String result1 = holder1.get(HOLDER_TIMEOUT_SECONDS, TimeUnit.SECONDS);
             assertThat(result1, is(notNullValue()));
             assertThat(result1, is(equalTo(message)));
 
-            final String result2 = holder2.get(5, TimeUnit.SECONDS);
+            final String result2 = holder2.get(HOLDER_TIMEOUT_SECONDS, TimeUnit.SECONDS);
             assertThat(result2, is(notNullValue()));
             assertThat(result2, is(equalTo(message)));
         } finally {
