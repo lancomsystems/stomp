@@ -1,6 +1,6 @@
 package de.lancom.systems.stomp.wire;
 
-import static de.lancom.systems.stomp.util.StringUtil.isEmpty;
+import static de.lancom.systems.stomp.util.StringUtil.isNullOrEmpty;
 
 import java.io.BufferedReader;
 import java.io.CharArrayWriter;
@@ -71,7 +71,7 @@ public class StompInputStream extends InputStream {
                         if (line == null) {
                             break;
                         }
-                        if (isEmpty(line)) {
+                        if (isNullOrEmpty(line)) {
                             continue;
                         } else {
                             frame = context.createFrame(line);
@@ -85,7 +85,7 @@ public class StompInputStream extends InputStream {
                     // read headers
                     while (true) {
                         final String line = reader.readLine();
-                        if (isEmpty(line)) {
+                        if (isNullOrEmpty(line)) {
                             break;
                         }
 

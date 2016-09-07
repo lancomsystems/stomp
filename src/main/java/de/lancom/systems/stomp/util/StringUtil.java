@@ -18,7 +18,7 @@ public final class StringUtil {
      * @param value value
      * @return empty flag
      */
-    public static boolean isEmpty(final String value) {
+    public static boolean isNullOrEmpty(final String value) {
         if (value != null) {
             for (int index = 0; index < value.length(); index++) {
                 if (!Character.isWhitespace(value.charAt(index))) {
