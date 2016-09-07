@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.locks.ReentrantLock;
 
 import de.lancom.systems.stomp.wire.frame.Frame;
@@ -45,7 +46,13 @@ public class StompOutputStream extends OutputStream {
                 for (final Map.Entry<String, String> header : frame.getHeaders().entrySet()) {
                     outputStream.write(header.getKey().getBytes(StandardCharsets.UTF_8));
                     outputStream.write(StompEncoding.HEADER_SEPARATOR);
-                    outputStream.write(header.getValue().getBytes(StandardCharsets.UTF_8));
+                    if (Objects.equals(frame.getAction(), StompAction.CONNECT.value())) {
+                        outputStream.write(header.getValue().getBytes(StandardCharsets.UTF_8));
+                    } else {
+                        outputStream.write(
+                                StompEncoding.encodeHeaderValue(header.getValue()).getBytes(StandardCharsets.UTF_8)
+                        );
+                    }
                     outputStream.write(StompEncoding.LINE_FEED);
                 }
                 outputStream.write(StompEncoding.LINE_FEED);
