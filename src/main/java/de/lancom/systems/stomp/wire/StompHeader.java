@@ -56,7 +56,7 @@ public enum StompHeader implements EnumValue<String> {
     /**
      * Version header.
      */
-    VERSION("accept-version"),
+    VERSION("version"),
     /**
      * Accept version header.
      */
