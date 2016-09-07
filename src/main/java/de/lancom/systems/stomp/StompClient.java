@@ -107,6 +107,15 @@ public class StompClient {
                                                         if (log.isErrorEnabled()) {
                                                             log.error("Failed to process  " + frame, ex);
                                                         }
+                                                        try {
+                                                            StompClient.this.nack(
+                                                                    connection.getBase(), messageFrame
+                                                            ).get();
+                                                        } catch (final Exception e) {
+                                                            if (log.isErrorEnabled()) {
+                                                                log.error("Failed to nack " + frame, ex);
+                                                            }
+                                                        }
                                                     }
                                                 }
                                             });
@@ -489,6 +498,7 @@ public class StompClient {
                         while (iterator.hasNext()) {
                             final Frame next = iterator.next();
                             if (selector.select(next)) {
+                                connection.incomingQueue.remove(next);
                                 return new StompFrameExchange(frame, next);
                             }
                         }
