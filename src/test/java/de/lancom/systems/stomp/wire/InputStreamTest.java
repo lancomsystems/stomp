@@ -52,7 +52,7 @@ public class InputStreamTest {
 
     @Test
     public void readQueue() throws Exception {
-        final StompUrl url = createStompUrl("/topic/%s", UUID.randomUUID());
+        final StompUrl url = createStompUrl("/queue/%s", UUID.randomUUID());
         final String subscriptionId = UUID.randomUUID().toString();
         final String message = UUID.randomUUID().toString();
 
