@@ -8,9 +8,6 @@ import javax.annotation.PreDestroy;
 import lombok.Getter;
 import org.apache.activemq.broker.BrokerService;
 
-/**
- * Created by fkneier on 19.08.16.
- */
 public class Broker {
 
     @Getter

@@ -4,7 +4,7 @@ import de.lancom.systems.stomp.wire.frame.Frame;
 import lombok.Data;
 
 /**
- * Created by fkneier on 22.08.16.
+ * Stomp message exchange.
  */
 @Data
 public class StompExchange {
