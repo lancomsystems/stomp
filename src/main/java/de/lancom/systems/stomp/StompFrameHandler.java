@@ -5,7 +5,7 @@ import de.lancom.systems.stomp.wire.frame.Frame;
 /**
  * Interface for handling of {@link Frame}.
  */
-public interface StompFameHandler {
+public interface StompFrameHandler {
     /**
      * Handler the given frame.
      *

@@ -20,7 +20,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import de.lancom.systems.stomp.util.CountDown;
 import de.lancom.systems.stomp.wire.StompContext;
-import de.lancom.systems.stomp.wire.StompFameExchange;
+import de.lancom.systems.stomp.wire.StompFrameExchange;
 import de.lancom.systems.stomp.wire.StompInputStream;
 import de.lancom.systems.stomp.wire.StompOutputStream;
 import de.lancom.systems.stomp.wire.StompUrl;
@@ -144,7 +144,7 @@ public class StompClient {
     public void stop() {
         if (running.compareAndSet(true, false)) {
 
-            final List<Future<StompFameExchange>> futures = new ArrayList<>();
+            final List<Future<StompFrameExchange>> futures = new ArrayList<>();
 
             for (final Connection connection : connections) {
 
@@ -168,7 +168,7 @@ public class StompClient {
                 ));
             }
 
-            for (final Future<StompFameExchange> future : futures) {
+            for (final Future<StompFrameExchange> future : futures) {
                 if (future != null) {
                     try {
                         future.get();
@@ -219,7 +219,7 @@ public class StompClient {
      * @return frame exchange
      * @throws IOException if an I/O error occurs
      */
-    public Future<StompFameExchange> send(
+    public Future<StompFrameExchange> send(
             final StompUrl url,
             final String body
     ) throws IOException {
@@ -235,7 +235,7 @@ public class StompClient {
      * @return frame exchange
      * @throws IOException if an I/O error occurs
      */
-    public Future<StompFameExchange> send(
+    public Future<StompFrameExchange> send(
             final StompUrl url,
             final String body,
             final Map<String, String> headers
@@ -256,7 +256,7 @@ public class StompClient {
      * @return frame exchange
      * @throws IOException if an I/O error occurs
      */
-    public Future<StompFameExchange> send(
+    public Future<StompFrameExchange> send(
             final StompUrl url,
             final SendFrame sendFrame
     ) throws IOException {
@@ -276,10 +276,10 @@ public class StompClient {
      * @return frame exchange
      * @throws IOException if an I/O error occurs
      */
-    public Future<StompFameExchange> subscribe(
+    public Future<StompFrameExchange> subscribe(
             final StompUrl url,
             final String id,
-            final StompFameHandler handler
+            final StompFrameHandler handler
     ) throws IOException {
 
         final SubscribeFrame frame = this.context.createFrame(SubscribeFrame.class);
@@ -299,10 +299,10 @@ public class StompClient {
      * @return frame exchange
      * @throws IOException if an I/O error occurs
      */
-    public Future<StompFameExchange> subscribe(
+    public Future<StompFrameExchange> subscribe(
             final StompUrl url,
             final SubscribeFrame subscribeFrame,
-            final StompFameHandler handler
+            final StompFrameHandler handler
     ) throws IOException {
         final Connection connection = this.getConnection(url, true);
         connection.getSubscriptionMap().put(subscribeFrame.getId(), new Subscription(subscribeFrame.getId(), handler));
@@ -322,7 +322,7 @@ public class StompClient {
      * @return frame exchange
      * @throws IOException if an I/O error occurs
      */
-    public Future<StompFameExchange> unsubscribe(
+    public Future<StompFrameExchange> unsubscribe(
             final StompUrl url,
             final String id
     ) throws IOException {
@@ -347,7 +347,7 @@ public class StompClient {
      * @return frame exchange
      * @throws IOException if an I/O error occurs
      */
-    public Future<StompFameExchange> unsubscribe(
+    public Future<StompFrameExchange> unsubscribe(
             final StompUrl url,
             final UnsubscribeFrame unsubscribeFrame
     ) throws IOException {
@@ -366,7 +366,7 @@ public class StompClient {
      * @return frame exchange
      * @throws IOException if an I/O error occurs
      */
-    public Future<StompFameExchange> ack(final StompUrl url, final MessageFrame frame) throws IOException {
+    public Future<StompFrameExchange> ack(final StompUrl url, final MessageFrame frame) throws IOException {
         final AckFrame ackFrame = this.context.createFrame(AckFrame.class);
         ackFrame.setId(frame.getAck());
         ackFrame.setRandomReceipt();
@@ -382,7 +382,7 @@ public class StompClient {
      * @return frame exchange
      * @throws IOException if an I/O error occurs
      */
-    public Future<StompFameExchange> ack(final StompUrl url, final AckFrame ackFrame) throws IOException {
+    public Future<StompFrameExchange> ack(final StompUrl url, final AckFrame ackFrame) throws IOException {
         return this.exchange(
                 this.getConnection(url, true),
                 ackFrame,
@@ -398,7 +398,7 @@ public class StompClient {
      * @return frame exchange
      * @throws IOException if an I/O error occurs
      */
-    public Future<StompFameExchange> nack(
+    public Future<StompFrameExchange> nack(
             final StompUrl url,
             final MessageFrame frame
     ) throws IOException {
@@ -416,7 +416,7 @@ public class StompClient {
      * @return frame exchange
      * @throws IOException if an I/O error occurs
      */
-    public Future<StompFameExchange> nack(
+    public Future<StompFrameExchange> nack(
             final StompUrl url,
             final NackFrame nackFrame
     ) throws IOException {
@@ -468,7 +468,7 @@ public class StompClient {
      * @param selector response selector
      * @return frame exchange
      */
-    private Future<StompFameExchange> exchange(
+    private Future<StompFrameExchange> exchange(
             final Connection connection,
             final Frame frame,
             final FrameSelector selector
@@ -477,9 +477,9 @@ public class StompClient {
             log.debug("Sending " + frame);
         }
 
-        return senderExecutor.submit(new Callable<StompFameExchange>() {
+        return senderExecutor.submit(new Callable<StompFrameExchange>() {
             @Override
-            public StompFameExchange call() throws Exception {
+            public StompFrameExchange call() throws Exception {
                 connection.getOutputStream().writeFrame(frame);
 
                 if (selector != null) {
@@ -489,7 +489,7 @@ public class StompClient {
                         while (iterator.hasNext()) {
                             final Frame next = iterator.next();
                             if (selector.select(next)) {
-                                return new StompFameExchange(frame, next);
+                                return new StompFrameExchange(frame, next);
                             }
                         }
                         final List<Frame> queue = connection.getIncomingQueue();
@@ -499,7 +499,7 @@ public class StompClient {
                     }
                     return null;
                 } else {
-                    return new StompFameExchange(frame, new EmptyFrame());
+                    return new StompFrameExchange(frame, new EmptyFrame());
                 }
 
             }
@@ -517,7 +517,7 @@ public class StompClient {
         private final String id;
 
         @Getter
-        private final StompFameHandler handler;
+        private final StompFrameHandler handler;
 
     }
 

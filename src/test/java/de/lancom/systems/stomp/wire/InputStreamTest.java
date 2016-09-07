@@ -11,7 +11,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
 import de.lancom.systems.stomp.StompClient;
-import de.lancom.systems.stomp.StompFameHandler;
+import de.lancom.systems.stomp.StompFrameHandler;
 import de.lancom.systems.stomp.util.AsyncHolder;
 import de.lancom.systems.stomp.util.Broker;
 import de.lancom.systems.stomp.wire.frame.Frame;
@@ -40,8 +40,8 @@ public class InputStreamTest {
     @Test
     public void sendMessage() throws Exception {
         final StompUrl url = createStompUrl("/topic/%s", UUID.randomUUID());
-        final Future<StompFameExchange> result = CLIENT.send(url, "Test");
-        final StompFameExchange exchange = result.get();
+        final Future<StompFrameExchange> result = CLIENT.send(url, "Test");
+        final StompFrameExchange exchange = result.get();
 
         assertThat(exchange, is(notNullValue()));
         assertThat(exchange.getResponse(), is(notNullValue()));
@@ -57,15 +57,15 @@ public class InputStreamTest {
         try {
             final AsyncHolder<String> holder = AsyncHolder.create();
 
-            CLIENT.subscribe(url, subscriptionId, new StompFameHandler() {
+            CLIENT.subscribe(url, subscriptionId, new StompFrameHandler() {
                 @Override
                 public void handle(final Frame frame) throws Exception {
                     holder.set(frame.getBodyAsString());
                 }
             });
 
-            final Future<StompFameExchange> future = CLIENT.send(url, message);
-            final StompFameExchange exchange = future.get();
+            final Future<StompFrameExchange> future = CLIENT.send(url, message);
+            final StompFrameExchange exchange = future.get();
 
             assertThat(exchange, is(notNullValue()));
             assertThat(exchange.getResponse(), is(notNullValue()));
@@ -91,22 +91,22 @@ public class InputStreamTest {
             final AsyncHolder<String> holder1 = AsyncHolder.create();
             final AsyncHolder<String> holder2 = AsyncHolder.create();
 
-            CLIENT.subscribe(url, subscriptionId1, new StompFameHandler() {
+            CLIENT.subscribe(url, subscriptionId1, new StompFrameHandler() {
                 @Override
                 public void handle(final Frame frame) throws Exception {
                     holder1.set(frame.getBodyAsString());
                 }
             });
 
-            CLIENT.subscribe(url, subscriptionId2, new StompFameHandler() {
+            CLIENT.subscribe(url, subscriptionId2, new StompFrameHandler() {
                 @Override
                 public void handle(final Frame frame) throws Exception {
                     holder2.set(frame.getBodyAsString());
                 }
             });
 
-            final Future<StompFameExchange> future = CLIENT.send(url, message);
-            final StompFameExchange exchange = future.get();
+            final Future<StompFrameExchange> future = CLIENT.send(url, message);
+            final StompFrameExchange exchange = future.get();
 
             assertThat(exchange, is(notNullValue()));
             assertThat(exchange.getResponse(), is(notNullValue()));
