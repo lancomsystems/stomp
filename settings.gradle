@@ -1,2 +1,3 @@
 rootProject.name = 'stomp'
+include 'core'
 
