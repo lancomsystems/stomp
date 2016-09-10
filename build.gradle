@@ -1,18 +1,93 @@
 group 'de.lancom.systems.stomp'
-version '1.0-SNAPSHOT'
+version '0.0.1'
 
 subprojects {
+    group rootProject.group
+    version rootProject.version
 
     apply plugin: 'java'
     apply plugin: 'checkstyle'
     apply plugin: 'findbugs'
     apply plugin: 'pmd'
+    apply plugin: 'maven'
+    apply plugin: 'signing'
 
     sourceCompatibility = 1.8
     targetCompatibility = 1.8
 
+    ext['signing.keyId'] = project.findProperty("signingKeyId")
+    ext['signing.secretKeyRingFile'] = project.findProperty("signingKeyRingFile")
+    ext['signing.password'] = project.findProperty("signingPassword")
+    ext['publish.url'] = project.findProperty("publishUrl")
+    ext['publish.user'] = project.findProperty("publishUser")
+    ext['publish.password'] = project.findProperty("publishPassword")
+
     repositories {
         mavenCentral()
+    }
+
+    task sourcesJar(type: Jar, dependsOn: classes) {
+        classifier = 'sources'
+        from sourceSets.main.allSource
+    }
+
+    task javadocJar(type: Jar, dependsOn: javadoc) {
+        classifier = 'javadoc'
+        from javadoc.destinationDir
+    }
+
+    artifacts {
+        archives sourcesJar
+        archives javadocJar
+    }
+
+    signing {
+        if (ext.has('publish.url')) {
+            sign configurations.archives
+        }
+    }
+
+    uploadArchives {
+        repositories {
+            if (ext.has('publish.url')) {
+                mavenDeployer {
+                    beforeDeployment { MavenDeployment deployment -> signing.signPom(deployment) }
+
+                    repository(url: ext['publish.url']) {
+                        if (ext.has('publish.user') && ext.has('publish.password')) {
+                            authentication(userName: ext['publish.user'], password: ext['publish.password'])
+                        }
+                    }
+                    pom.project {
+                        name 'Stomp Library'
+
+                        packaging 'jar'
+                        description 'A Stomp client library'
+
+                        scm {
+                            connection 'scm:git:https://github.com/lancomsystems/stomp.git'
+                            developerConnection 'scm:git:https://github.com/lancomsystems/stomp.git'
+                            url 'https://github.com/lancomsystems/stomp/'
+                        }
+
+                        licenses {
+                            license {
+                                name 'The Apache License, Version 2.0'
+                                url 'http://www.apache.org/licenses/LICENSE-2.0.txt'
+                            }
+                        }
+
+                        developers {
+                            developer {
+                                id 'frederic_kneier'
+                                name 'Frederic Kneier'
+                                email 'Frederic@Kneier.net'
+                            }
+                        }
+                    }
+                }
+            }
+        }
     }
 
     pmd {
