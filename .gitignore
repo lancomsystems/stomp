@@ -1,6 +1,7 @@
 /.gradle
-/core/build/
-/srping/build/
+/stomp-core/build/
+/stomp-spring/build/
+/stomp-test/build/
 /.idea
 
 # Ignore Gradle GUI config

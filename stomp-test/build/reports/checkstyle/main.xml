@@ -1,7 +1,0 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<checkstyle version="7.1">
-<file name="/home/frederic/Projekte/lancom/stomp/stomp-test/src/main/java/de/lancom/systems/stomp/test/AsyncHolder.java">
-</file>
-<file name="/home/frederic/Projekte/lancom/stomp/stomp-test/src/main/java/de/lancom/systems/stomp/test/Broker.java">
-</file>
-</checkstyle>
