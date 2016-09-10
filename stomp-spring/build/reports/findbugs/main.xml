@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<BugCollection version="3.0.1" sequence="0" timestamp="1473524894069" analysisTimestamp="1473524894089" release="">
+  <Project projectName="">
+    <Jar>/home/frederic/Projekte/lancom/stomp/stomp-spring/build/classes/main/de/lancom/systems/stomp/core/spring/EnableStomp.class</Jar>
+    <Jar>/home/frederic/Projekte/lancom/stomp/stomp-spring/build/classes/main/de/lancom/systems/stomp/core/spring/StompBeanPostProcessor$1.class</Jar>
+    <Jar>/home/frederic/Projekte/lancom/stomp/stomp-spring/build/classes/main/de/lancom/systems/stomp/core/spring/StompSubscription.class</Jar>
+    <Jar>/home/frederic/Projekte/lancom/stomp/stomp-spring/build/classes/main/de/lancom/systems/stomp/core/spring/StompBeanPostProcessor$2.class</Jar>
+    <Jar>/home/frederic/Projekte/lancom/stomp/stomp-spring/build/classes/main/de/lancom/systems/stomp/core/spring/StompBeanPostProcessor$ProducerHandler.class</Jar>
+    <Jar>/home/frederic/Projekte/lancom/stomp/stomp-spring/build/classes/main/de/lancom/systems/stomp/core/spring/StompDestination.class</Jar>
+    <Jar>/home/frederic/Projekte/lancom/stomp/stomp-spring/build/classes/main/de/lancom/systems/stomp/core/spring/StompConfiguration.class</Jar>
+    <Jar>/home/frederic/Projekte/lancom/stomp/stomp-spring/build/classes/main/de/lancom/systems/stomp/core/spring/StompBeanPostProcessor$ConsumerHandler.class</Jar>
+    <Jar>/home/frederic/Projekte/lancom/stomp/stomp-spring/build/classes/main/de/lancom/systems/stomp/core/spring/StompBeanPostProcessor.class</Jar>
+    <Jar>/home/frederic/Projekte/lancom/stomp/stomp-spring/build/classes/main/de/lancom/systems/stomp/core/spring/StompProducer.class</Jar>
+    <AuxClasspathEntry>/home/frederic/Projekte/lancom/stomp/stomp-core/build/libs/stomp-core.jar</AuxClasspathEntry>
+    <AuxClasspathEntry>/home/frederic/.gradle/caches/modules-2/files-2.1/org.springframework/spring-context/4.0.0.RELEASE/57586271e775982f8961e1e7e338447d4af1864c/spring-context-4.0.0.RELEASE.jar</AuxClasspathEntry>
+    <AuxClasspathEntry>/home/frederic/.gradle/caches/modules-2/files-2.1/org.projectlombok/lombok/1.16.8/2ce9de13f277ec1600e7e04231477e3e5f59d317/lombok-1.16.8.jar</AuxClasspathEntry>
+    <AuxClasspathEntry>/home/frederic/.gradle/caches/modules-2/files-2.1/org.slf4j/slf4j-api/1.7.21/139535a69a4239db087de9bab0bee568bf8e0b70/slf4j-api-1.7.21.jar</AuxClasspathEntry>
+    <AuxClasspathEntry>/home/frederic/.gradle/caches/modules-2/files-2.1/org.springframework/spring-aop/4.0.0.RELEASE/cceb3e9510774b3f88b008a70c6a9aefb98d891f/spring-aop-4.0.0.RELEASE.jar</AuxClasspathEntry>
+    <AuxClasspathEntry>/home/frederic/.gradle/caches/modules-2/files-2.1/org.springframework/spring-beans/4.0.0.RELEASE/97e97a04aede419679392176ec1df175d3e9a7a0/spring-beans-4.0.0.RELEASE.jar</AuxClasspathEntry>
+    <AuxClasspathEntry>/home/frederic/.gradle/caches/modules-2/files-2.1/org.springframework/spring-core/4.0.0.RELEASE/73b485e25b13a7a44b73a301fe6757c3cbad453e/spring-core-4.0.0.RELEASE.jar</AuxClasspathEntry>
+    <AuxClasspathEntry>/home/frederic/.gradle/caches/modules-2/files-2.1/org.springframework/spring-expression/4.0.0.RELEASE/199be03c976524b6427dff31078227bfc703400b/spring-expression-4.0.0.RELEASE.jar</AuxClasspathEntry>
+    <AuxClasspathEntry>/home/frederic/.gradle/caches/modules-2/files-2.1/aopalliance/aopalliance/1.0/235ba8b489512805ac13a8f9ea77a1ca5ebe3e8/aopalliance-1.0.jar</AuxClasspathEntry>
+    <AuxClasspathEntry>/home/frederic/.gradle/caches/modules-2/files-2.1/commons-logging/commons-logging/1.1.1/5043bfebc3db072ed80fbd362e7caf00e885d8ae/commons-logging-1.1.1.jar</AuxClasspathEntry>
+    <SrcDir>/home/frederic/Projekte/lancom/stomp/stomp-spring/src/main/java/de/lancom/systems/stomp/core/spring/StompBeanPostProcessor.java</SrcDir>
+    <SrcDir>/home/frederic/Projekte/lancom/stomp/stomp-spring/src/main/java/de/lancom/systems/stomp/core/spring/EnableStomp.java</SrcDir>
+    <SrcDir>/home/frederic/Projekte/lancom/stomp/stomp-spring/src/main/java/de/lancom/systems/stomp/core/spring/StompConfiguration.java</SrcDir>
+    <SrcDir>/home/frederic/Projekte/lancom/stomp/stomp-spring/src/main/java/de/lancom/systems/stomp/core/spring/StompSubscription.java</SrcDir>
+    <SrcDir>/home/frederic/Projekte/lancom/stomp/stomp-spring/src/main/java/de/lancom/systems/stomp/core/spring/StompDestination.java</SrcDir>
+    <SrcDir>/home/frederic/Projekte/lancom/stomp/stomp-spring/src/main/java/de/lancom/systems/stomp/core/spring/StompProducer.java</SrcDir>
+  </Project>
+  <Errors errors="0" missingClasses="0"></Errors>
+  <FindBugsSummary timestamp="Sat, 10 Sep 2016 18:28:14 +0200" total_classes="10" referenced_classes="85" total_bugs="0" total_size="116" num_packages="1" java_version="1.8.0_101" vm_version="25.101-b13" cpu_seconds="6.62" clock_seconds="1.51" peak_mbytes="181.27" alloc_mbytes="1748.00" gc_seconds="0.02">
+    <PackageStats package="de.lancom.systems.stomp.core.spring" total_bugs="0" total_types="10" total_size="116">
+      <ClassStats class="de.lancom.systems.stomp.core.spring.EnableStomp" sourceFile="EnableStomp.java" interface="true" size="1" bugs="0"/>
+      <ClassStats class="de.lancom.systems.stomp.core.spring.StompBeanPostProcessor" sourceFile="StompBeanPostProcessor.java" interface="false" size="24" bugs="0"/>
+      <ClassStats class="de.lancom.systems.stomp.core.spring.StompBeanPostProcessor$1" sourceFile="StompBeanPostProcessor.java" interface="false" size="15" bugs="0"/>
+      <ClassStats class="de.lancom.systems.stomp.core.spring.StompBeanPostProcessor$2" sourceFile="StompBeanPostProcessor.java" interface="false" size="25" bugs="0"/>
+      <ClassStats class="de.lancom.systems.stomp.core.spring.StompBeanPostProcessor$ConsumerHandler" sourceFile="StompBeanPostProcessor.java" interface="false" size="23" bugs="0"/>
+      <ClassStats class="de.lancom.systems.stomp.core.spring.StompBeanPostProcessor$ProducerHandler" sourceFile="StompBeanPostProcessor.java" interface="false" size="13" bugs="0"/>
+      <ClassStats class="de.lancom.systems.stomp.core.spring.StompConfiguration" sourceFile="StompConfiguration.java" interface="false" size="7" bugs="0"/>
+      <ClassStats class="de.lancom.systems.stomp.core.spring.StompDestination" sourceFile="StompDestination.java" interface="true" size="2" bugs="0"/>
+      <ClassStats class="de.lancom.systems.stomp.core.spring.StompProducer" sourceFile="StompProducer.java" interface="true" size="2" bugs="0"/>
+      <ClassStats class="de.lancom.systems.stomp.core.spring.StompSubscription" sourceFile="StompSubscription.java" interface="true" size="4" bugs="0"/>
+    </PackageStats>
+    <FindBugsProfile>
+      <ClassProfile name="edu.umd.cs.findbugs.classfile.engine.ClassInfoAnalysisEngine" totalMilliseconds="231" invocations="644" avgMicrosecondsPerInvocation="359" maxMicrosecondsPerInvocation="9910" standardDeviationMircosecondsPerInvocation="834"/>
+      <ClassProfile name="edu.umd.cs.findbugs.detect.FieldItemSummary" totalMilliseconds="110" invocations="85" avgMicrosecondsPerInvocation="1294" maxMicrosecondsPerInvocation="14848" standardDeviationMircosecondsPerInvocation="2896"/>
+      <ClassProfile name="edu.umd.cs.findbugs.detect.FindNoSideEffectMethods" totalMilliseconds="77" invocations="85" avgMicrosecondsPerInvocation="911" maxMicrosecondsPerInvocation="13309" standardDeviationMircosecondsPerInvocation="1947"/>
+      <ClassProfile name="edu.umd.cs.findbugs.OpcodeStack$JumpInfoFactory" totalMilliseconds="71" invocations="226" avgMicrosecondsPerInvocation="315" maxMicrosecondsPerInvocation="2251" standardDeviationMircosecondsPerInvocation="350"/>
+      <ClassProfile name="edu.umd.cs.findbugs.classfile.engine.bcel.JavaClassAnalysisEngine" totalMilliseconds="41" invocations="121" avgMicrosecondsPerInvocation="344" maxMicrosecondsPerInvocation="15261" standardDeviationMircosecondsPerInvocation="1431"/>
+      <ClassProfile name="edu.umd.cs.findbugs.classfile.engine.bcel.MethodGenFactory" totalMilliseconds="38" invocations="23" avgMicrosecondsPerInvocation="1674" maxMicrosecondsPerInvocation="34175" standardDeviationMircosecondsPerInvocation="6933"/>
+      <ClassProfile name="edu.umd.cs.findbugs.util.TopologicalSort" totalMilliseconds="38" invocations="608" avgMicrosecondsPerInvocation="62" maxMicrosecondsPerInvocation="1365" standardDeviationMircosecondsPerInvocation="127"/>
+      <ClassProfile name="edu.umd.cs.findbugs.detect.NoteDirectlyRelevantTypeQualifiers" totalMilliseconds="35" invocations="85" avgMicrosecondsPerInvocation="423" maxMicrosecondsPerInvocation="5148" standardDeviationMircosecondsPerInvocation="954"/>
+      <ClassProfile name="edu.umd.cs.findbugs.detect.FunctionsThatMightBeMistakenForProcedures" totalMilliseconds="29" invocations="85" avgMicrosecondsPerInvocation="344" maxMicrosecondsPerInvocation="5894" standardDeviationMircosecondsPerInvocation="877"/>
+      <ClassProfile name="edu.umd.cs.findbugs.classfile.engine.ClassDataAnalysisEngine" totalMilliseconds="29" invocations="648" avgMicrosecondsPerInvocation="45" maxMicrosecondsPerInvocation="752" standardDeviationMircosecondsPerInvocation="42"/>
+      <ClassProfile name="edu.umd.cs.findbugs.detect.BuildObligationPolicyDatabase" totalMilliseconds="27" invocations="85" avgMicrosecondsPerInvocation="326" maxMicrosecondsPerInvocation="5172" standardDeviationMircosecondsPerInvocation="704"/>
+      <ClassProfile name="edu.umd.cs.findbugs.classfile.engine.bcel.ValueNumberDataflowFactory" totalMilliseconds="26" invocations="19" avgMicrosecondsPerInvocation="1416" maxMicrosecondsPerInvocation="10701" standardDeviationMircosecondsPerInvocation="2617"/>
+      <ClassProfile name="edu.umd.cs.findbugs.classfile.engine.bcel.TypeDataflowFactory" totalMilliseconds="26" invocations="19" avgMicrosecondsPerInvocation="1402" maxMicrosecondsPerInvocation="11635" standardDeviationMircosecondsPerInvocation="2643"/>
+      <ClassProfile name="edu.umd.cs.findbugs.detect.OverridingEqualsNotSymmetrical" totalMilliseconds="25" invocations="85" avgMicrosecondsPerInvocation="304" maxMicrosecondsPerInvocation="7243" standardDeviationMircosecondsPerInvocation="877"/>
+      <ClassProfile name="edu.umd.cs.findbugs.classfile.engine.bcel.IsNullValueDataflowFactory" totalMilliseconds="25" invocations="18" avgMicrosecondsPerInvocation="1396" maxMicrosecondsPerInvocation="11919" standardDeviationMircosecondsPerInvocation="2709"/>
+      <ClassProfile name="edu.umd.cs.findbugs.classfile.engine.bcel.CFGFactory" totalMilliseconds="22" invocations="18" avgMicrosecondsPerInvocation="1266" maxMicrosecondsPerInvocation="12701" standardDeviationMircosecondsPerInvocation="2862"/>
+      <ClassProfile name="edu.umd.cs.findbugs.detect.BuildStringPassthruGraph" totalMilliseconds="19" invocations="85" avgMicrosecondsPerInvocation="234" maxMicrosecondsPerInvocation="4768" standardDeviationMircosecondsPerInvocation="622"/>
+      <ClassProfile name="edu.umd.cs.findbugs.detect.CalledMethods" totalMilliseconds="19" invocations="85" avgMicrosecondsPerInvocation="233" maxMicrosecondsPerInvocation="2815" standardDeviationMircosecondsPerInvocation="516"/>
+    </FindBugsProfile>
+  </FindBugsSummary>
+  <ClassFeatures></ClassFeatures>
+  <History></History>
+</BugCollection>

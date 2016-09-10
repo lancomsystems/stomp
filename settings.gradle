@@ -1,3 +1,5 @@
 rootProject.name = 'stomp'
-include 'core'
+include 'stomp-core'
+include 'stomp-spring'
+include 'stomp-test'
 

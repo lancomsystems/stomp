@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="de.lancom.systems.stomp.spring.ConsumerTest" tests="1" skipped="0" failures="0" errors="0" timestamp="2016-09-10T16:28:37" hostname="frederic-pc" time="0.08">
+  <properties/>
+  <testcase name="test" classname="de.lancom.systems.stomp.spring.ConsumerTest" time="0.08"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

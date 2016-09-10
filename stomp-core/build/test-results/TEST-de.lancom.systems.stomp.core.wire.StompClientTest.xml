@@ -1,0 +1,182 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="de.lancom.systems.stomp.core.wire.StompClientTest" tests="6" skipped="0" failures="0" errors="0" timestamp="2016-09-10T16:28:35" hostname="frederic-pc" time="0.831">
+  <properties/>
+  <testcase name="acknowledged" classname="de.lancom.systems.stomp.core.wire.StompClientTest" time="0.215"/>
+  <testcase name="notAcknowledgedException" classname="de.lancom.systems.stomp.core.wire.StompClientTest" time="0.126"/>
+  <testcase name="readQueue" classname="de.lancom.systems.stomp.core.wire.StompClientTest" time="0.159"/>
+  <testcase name="readTopic" classname="de.lancom.systems.stomp.core.wire.StompClientTest" time="0.167"/>
+  <testcase name="notAcknowledgedManual" classname="de.lancom.systems.stomp.core.wire.StompClientTest" time="0.083"/>
+  <testcase name="sendMessage" classname="de.lancom.systems.stomp.core.wire.StompClientTest" time="0.079"/>
+  <system-out><![CDATA[2016-09-10 18:28:35 INFO  BrokerService:670 - Using Persistence Adapter: MemoryPersistenceAdapter
+2016-09-10 18:28:35 INFO  ManagementContext:155 - JMX consoles can connect to service:jmx:rmi:///jndi/rmi://localhost:1099/jmxrmi
+2016-09-10 18:28:35 INFO  BrokerService:733 - Apache ActiveMQ 5.14.0 (localhost, ID:frederic-pc-36879-1473524915325-0:1) is starting
+2016-09-10 18:28:35 INFO  TransportServerThreadSupport:69 - Listening for connections at: stomp+nio://localhost:43243
+2016-09-10 18:28:35 INFO  TransportConnector:263 - Connector stomp+nio://localhost:43243 started
+2016-09-10 18:28:35 INFO  BrokerService:760 - Apache ActiveMQ 5.14.0 (localhost, ID:frederic-pc-36879-1473524915325-0:1) started
+2016-09-10 18:28:35 INFO  BrokerService:761 - For help or more information please see: http://activemq.apache.org
+2016-09-10 18:28:35 WARN  BrokerService:2098 - Temporary Store limit is 51200 mb (current store usage is 0 mb). The data directory: /home/frederic/Projekte/lancom/stomp/stomp-core only has 10816 mb of usable space. - resetting to maximum available disk space: 10816 mb
+2016-09-10 18:28:35 INFO  StompClientTest$LoggingFrameInterceptor:198 - StompFrame intercepted: 
+	ConnectFrame(action=CONNECT, body=null, headers={accept-version=1.2})
+	stomp://localhost:43243/queue/29ebfe5e-7d76-457c-95b5-a27324ebe0dc
+2016-09-10 18:28:35 INFO  StompClientTest$LoggingFrameInterceptor:198 - StompFrame intercepted: 
+	ConnectedFrame(action=CONNECTED, body=null, headers={server=ActiveMQ/5.14.0, heart-beat=0,0, session=ID:frederic-pc-36879-1473524915325-3:1, version=1.2})
+	stomp://localhost:43243
+2016-09-10 18:28:35 INFO  StompClientTest$LoggingFrameInterceptor:198 - StompFrame intercepted: 
+	SubscribeFrame(action=SUBSCRIBE, body=null, headers={destination=/queue/29ebfe5e-7d76-457c-95b5-a27324ebe0dc, ack=client-individual, receipt=cb793e8e-6876-4ac7-98d9-ea199ed0942b, id=086c0130-c6f2-4707-a2a5-4314b5dee8ec})
+	stomp://localhost:43243/queue/29ebfe5e-7d76-457c-95b5-a27324ebe0dc
+2016-09-10 18:28:35 INFO  StompClientTest$LoggingFrameInterceptor:198 - StompFrame intercepted: 
+	ReceiptFrame(action=RECEIPT, body=null, headers={receipt-id=cb793e8e-6876-4ac7-98d9-ea199ed0942b})
+	stomp://localhost:43243
+2016-09-10 18:28:35 INFO  StompClientTest$LoggingFrameInterceptor:198 - StompFrame intercepted: 
+	SendFrame(action=SEND, body=c8bb11c1-2cb4-4558-8cb1-61eb2c98a1db, headers={destination=/queue/29ebfe5e-7d76-457c-95b5-a27324ebe0dc, receipt=40cbfb32-9826-4a41-a1a4-6dbcc019ccc4})
+	stomp://localhost:43243/queue/29ebfe5e-7d76-457c-95b5-a27324ebe0dc
+2016-09-10 18:28:35 INFO  StompClientTest$LoggingFrameInterceptor:198 - StompFrame intercepted: 
+	ReceiptFrame(action=RECEIPT, body=null, headers={receipt-id=40cbfb32-9826-4a41-a1a4-6dbcc019ccc4})
+	stomp://localhost:43243
+2016-09-10 18:28:35 INFO  StompClientTest$LoggingFrameInterceptor:198 - StompFrame intercepted: 
+	MessageFrame(action=MESSAGE, body=c8bb11c1-2cb4-4558-8cb1-61eb2c98a1db, headers={content-length=36, expires=0, destination=/queue/29ebfe5e-7d76-457c-95b5-a27324ebe0dc, ack=ID\cfrederic-pc-36879-1473524915325-4\c1, message-id=ID\cfrederic-pc-36879-1473524915325-3\c1\c-1\c1\c1, subscription=086c0130-c6f2-4707-a2a5-4314b5dee8ec, priority=4, timestamp=1473524915563})
+	stomp://localhost:43243/queue/29ebfe5e-7d76-457c-95b5-a27324ebe0dc
+2016-09-10 18:28:35 INFO  StompClientTest$LoggingFrameInterceptor:198 - StompFrame intercepted: 
+	AckFrame(action=ACK, body=null, headers={receipt=42281372-fc15-442d-988c-802ac0ab1434, id=ID\cfrederic-pc-36879-1473524915325-4\c1})
+	stomp://localhost:43243
+2016-09-10 18:28:35 INFO  StompClientTest$LoggingFrameInterceptor:198 - StompFrame intercepted: 
+	UnsubscribeFrame(action=UNSUBSCRIBE, body=null, headers={receipt=1c5e139e-41f8-4f04-8020-44bf6e222364, id=086c0130-c6f2-4707-a2a5-4314b5dee8ec})
+	stomp://localhost:43243/queue/29ebfe5e-7d76-457c-95b5-a27324ebe0dc
+2016-09-10 18:28:35 INFO  StompClientTest$LoggingFrameInterceptor:198 - StompFrame intercepted: 
+	ReceiptFrame(action=RECEIPT, body=null, headers={receipt-id=42281372-fc15-442d-988c-802ac0ab1434})
+	stomp://localhost:43243
+2016-09-10 18:28:35 INFO  StompClientTest$LoggingFrameInterceptor:198 - StompFrame intercepted: 
+	ReceiptFrame(action=RECEIPT, body=null, headers={receipt-id=1c5e139e-41f8-4f04-8020-44bf6e222364})
+	stomp://localhost:43243
+2016-09-10 18:28:35 INFO  StompClientTest$LoggingFrameInterceptor:198 - StompFrame intercepted: 
+	SubscribeFrame(action=SUBSCRIBE, body=null, headers={destination=/queue/2b05a403-2bde-46d0-8cd8-0923be365987, ack=client-individual, receipt=e7af3a2b-54de-4bc9-94a0-2d0826a94dbf, id=3c59a6e0-7232-4081-ac7c-9a71578dd65d})
+	stomp://localhost:43243/queue/2b05a403-2bde-46d0-8cd8-0923be365987
+2016-09-10 18:28:35 INFO  StompClientTest$LoggingFrameInterceptor:198 - StompFrame intercepted: 
+	ReceiptFrame(action=RECEIPT, body=null, headers={receipt-id=e7af3a2b-54de-4bc9-94a0-2d0826a94dbf})
+	stomp://localhost:43243
+2016-09-10 18:28:35 INFO  StompClientTest$LoggingFrameInterceptor:198 - StompFrame intercepted: 
+	SendFrame(action=SEND, body=1954e2d8-2749-414e-b439-9d2b68620ba1, headers={destination=/queue/2b05a403-2bde-46d0-8cd8-0923be365987, receipt=843a1416-e4c2-4bdb-a15a-c645a67f2bc2})
+	stomp://localhost:43243/queue/2b05a403-2bde-46d0-8cd8-0923be365987
+2016-09-10 18:28:35 INFO  StompClientTest$LoggingFrameInterceptor:198 - StompFrame intercepted: 
+	ReceiptFrame(action=RECEIPT, body=null, headers={receipt-id=843a1416-e4c2-4bdb-a15a-c645a67f2bc2})
+	stomp://localhost:43243
+2016-09-10 18:28:35 INFO  StompClientTest$LoggingFrameInterceptor:198 - StompFrame intercepted: 
+	MessageFrame(action=MESSAGE, body=1954e2d8-2749-414e-b439-9d2b68620ba1, headers={content-length=36, expires=0, destination=/queue/2b05a403-2bde-46d0-8cd8-0923be365987, ack=ID\cfrederic-pc-36879-1473524915325-4\c2, message-id=ID\cfrederic-pc-36879-1473524915325-3\c1\c-1\c1\c2, subscription=3c59a6e0-7232-4081-ac7c-9a71578dd65d, priority=4, timestamp=1473524915765})
+	stomp://localhost:43243/queue/2b05a403-2bde-46d0-8cd8-0923be365987
+2016-09-10 18:28:35 ERROR StompClient:755 - Failed to process MessageFrame(action=MESSAGE, body=1954e2d8-2749-414e-b439-9d2b68620ba1, headers={content-length=36, expires=0, destination=/queue/2b05a403-2bde-46d0-8cd8-0923be365987, ack=ID\cfrederic-pc-36879-1473524915325-4\c2, message-id=ID\cfrederic-pc-36879-1473524915325-3\c1\c-1\c1\c2, subscription=3c59a6e0-7232-4081-ac7c-9a71578dd65d, priority=4, timestamp=1473524915765})
+java.lang.Exception: failed
+	at de.lancom.systems.stomp.core.wire.StompClientTest.lambda$notAcknowledgedException$8(StompClientTest.java:180)
+	at de.lancom.systems.stomp.core.StompClient$FrameConsumer.run(StompClient.java:752)
+	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1142)
+	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:617)
+	at java.lang.Thread.run(Thread.java:745)
+2016-09-10 18:28:35 INFO  StompClientTest$LoggingFrameInterceptor:198 - StompFrame intercepted: 
+	NackFrame(action=NACK, body=null, headers={receipt=599cc179-9792-4882-b131-6295034e8c4f, id=ID\cfrederic-pc-36879-1473524915325-4\c2})
+	stomp://localhost:43243
+2016-09-10 18:28:35 INFO  StompClientTest$LoggingFrameInterceptor:198 - StompFrame intercepted: 
+	SubscribeFrame(action=SUBSCRIBE, body=null, headers={destination=/queue/0e5156b8-40b0-4c19-aa15-5fbf3970d483, receipt=74e7f1d0-5714-4509-9085-6247386aba8c, id=f7dfa695-87db-4b97-831a-2034f7b102f6})
+	stomp://localhost:43243/queue/0e5156b8-40b0-4c19-aa15-5fbf3970d483
+2016-09-10 18:28:35 INFO  StompClientTest$LoggingFrameInterceptor:198 - StompFrame intercepted: 
+	ReceiptFrame(action=RECEIPT, body=null, headers={receipt-id=599cc179-9792-4882-b131-6295034e8c4f})
+	stomp://localhost:43243
+2016-09-10 18:28:35 INFO  StompClientTest$LoggingFrameInterceptor:198 - StompFrame intercepted: 
+	ReceiptFrame(action=RECEIPT, body=null, headers={receipt-id=74e7f1d0-5714-4509-9085-6247386aba8c})
+	stomp://localhost:43243
+2016-09-10 18:28:35 INFO  StompClientTest$LoggingFrameInterceptor:198 - StompFrame intercepted: 
+	SendFrame(action=SEND, body=4ff5435b-e8bf-4cc5-b4c6-05a8b31bc07e, headers={destination=/queue/0e5156b8-40b0-4c19-aa15-5fbf3970d483, receipt=34788575-3626-4fe8-98d9-2bd694b5fd5f})
+	stomp://localhost:43243/queue/0e5156b8-40b0-4c19-aa15-5fbf3970d483
+2016-09-10 18:28:35 INFO  StompClientTest$LoggingFrameInterceptor:198 - StompFrame intercepted: 
+	ReceiptFrame(action=RECEIPT, body=null, headers={receipt-id=34788575-3626-4fe8-98d9-2bd694b5fd5f})
+	stomp://localhost:43243
+2016-09-10 18:28:35 INFO  StompClientTest$LoggingFrameInterceptor:198 - StompFrame intercepted: 
+	MessageFrame(action=MESSAGE, body=4ff5435b-e8bf-4cc5-b4c6-05a8b31bc07e, headers={content-length=36, expires=0, destination=/queue/0e5156b8-40b0-4c19-aa15-5fbf3970d483, message-id=ID\cfrederic-pc-36879-1473524915325-3\c1\c-1\c1\c3, subscription=f7dfa695-87db-4b97-831a-2034f7b102f6, priority=4, timestamp=1473524915925})
+	stomp://localhost:43243/queue/0e5156b8-40b0-4c19-aa15-5fbf3970d483
+2016-09-10 18:28:35 INFO  StompClientTest$LoggingFrameInterceptor:198 - StompFrame intercepted: 
+	SubscribeFrame(action=SUBSCRIBE, body=null, headers={destination=/topic/bc04475d-8811-484c-9ec9-b53121f8fccd, receipt=1a96f8e1-87bb-423d-b674-e2c50322201b, id=face0c7a-039e-4d0b-aa66-d0b3341b6cf5})
+	stomp://localhost:43243/topic/bc04475d-8811-484c-9ec9-b53121f8fccd
+2016-09-10 18:28:36 INFO  StompClientTest$LoggingFrameInterceptor:198 - StompFrame intercepted: 
+	ReceiptFrame(action=RECEIPT, body=null, headers={receipt-id=1a96f8e1-87bb-423d-b674-e2c50322201b})
+	stomp://localhost:43243
+2016-09-10 18:28:36 INFO  StompClientTest$LoggingFrameInterceptor:198 - StompFrame intercepted: 
+	SubscribeFrame(action=SUBSCRIBE, body=null, headers={destination=/topic/bc04475d-8811-484c-9ec9-b53121f8fccd, receipt=8d7fe401-0b65-4f60-96ae-8783cf42285e, id=717f12f9-f5d8-4ff6-aa8c-91683e1625a3})
+	stomp://localhost:43243/topic/bc04475d-8811-484c-9ec9-b53121f8fccd
+2016-09-10 18:28:36 INFO  StompClientTest$LoggingFrameInterceptor:198 - StompFrame intercepted: 
+	ReceiptFrame(action=RECEIPT, body=null, headers={receipt-id=8d7fe401-0b65-4f60-96ae-8783cf42285e})
+	stomp://localhost:43243
+2016-09-10 18:28:36 INFO  StompClientTest$LoggingFrameInterceptor:198 - StompFrame intercepted: 
+	SendFrame(action=SEND, body=1ade7414-be63-42fb-bf4c-6e2aec6068bf, headers={destination=/topic/bc04475d-8811-484c-9ec9-b53121f8fccd, receipt=2dbddbc1-bfae-486d-ba9b-c3042ded6f7b})
+	stomp://localhost:43243/topic/bc04475d-8811-484c-9ec9-b53121f8fccd
+2016-09-10 18:28:36 INFO  StompClientTest$LoggingFrameInterceptor:198 - StompFrame intercepted: 
+	ReceiptFrame(action=RECEIPT, body=null, headers={receipt-id=2dbddbc1-bfae-486d-ba9b-c3042ded6f7b})
+	stomp://localhost:43243
+2016-09-10 18:28:36 INFO  StompClientTest$LoggingFrameInterceptor:198 - StompFrame intercepted: 
+	MessageFrame(action=MESSAGE, body=1ade7414-be63-42fb-bf4c-6e2aec6068bf, headers={content-length=36, expires=0, destination=/topic/bc04475d-8811-484c-9ec9-b53121f8fccd, message-id=ID\cfrederic-pc-36879-1473524915325-3\c1\c-1\c1\c4, subscription=face0c7a-039e-4d0b-aa66-d0b3341b6cf5, priority=4, timestamp=1473524916093})
+	stomp://localhost:43243/topic/bc04475d-8811-484c-9ec9-b53121f8fccd
+2016-09-10 18:28:36 INFO  StompClientTest$LoggingFrameInterceptor:198 - StompFrame intercepted: 
+	MessageFrame(action=MESSAGE, body=1ade7414-be63-42fb-bf4c-6e2aec6068bf, headers={content-length=36, expires=0, destination=/topic/bc04475d-8811-484c-9ec9-b53121f8fccd, message-id=ID\cfrederic-pc-36879-1473524915325-3\c1\c-1\c1\c4, subscription=717f12f9-f5d8-4ff6-aa8c-91683e1625a3, priority=4, timestamp=1473524916093})
+	stomp://localhost:43243/topic/bc04475d-8811-484c-9ec9-b53121f8fccd
+2016-09-10 18:28:36 INFO  StompClientTest$LoggingFrameInterceptor:198 - StompFrame intercepted: 
+	SubscribeFrame(action=SUBSCRIBE, body=null, headers={destination=/queue/d92e7bac-493b-442e-a311-dc09b97a40e6, ack=client-individual, receipt=747dc1ea-e743-4417-92f9-238d487241a8, id=28893439-5468-4d53-bf81-a491addd2b2f})
+	stomp://localhost:43243/queue/d92e7bac-493b-442e-a311-dc09b97a40e6
+2016-09-10 18:28:36 INFO  StompClientTest$LoggingFrameInterceptor:198 - StompFrame intercepted: 
+	SendFrame(action=SEND, body=01a647f7-0300-496a-8281-258285aec3ed, headers={destination=/queue/d92e7bac-493b-442e-a311-dc09b97a40e6, receipt=e4e0ee48-a2d8-485b-84aa-ce9db7368a8c})
+	stomp://localhost:43243/queue/d92e7bac-493b-442e-a311-dc09b97a40e6
+2016-09-10 18:28:36 INFO  StompClientTest$LoggingFrameInterceptor:198 - StompFrame intercepted: 
+	ReceiptFrame(action=RECEIPT, body=null, headers={receipt-id=747dc1ea-e743-4417-92f9-238d487241a8})
+	stomp://localhost:43243
+2016-09-10 18:28:36 INFO  StompClientTest$LoggingFrameInterceptor:198 - StompFrame intercepted: 
+	ReceiptFrame(action=RECEIPT, body=null, headers={receipt-id=e4e0ee48-a2d8-485b-84aa-ce9db7368a8c})
+	stomp://localhost:43243
+2016-09-10 18:28:36 INFO  StompClientTest$LoggingFrameInterceptor:198 - StompFrame intercepted: 
+	MessageFrame(action=MESSAGE, body=01a647f7-0300-496a-8281-258285aec3ed, headers={content-length=36, expires=0, destination=/queue/d92e7bac-493b-442e-a311-dc09b97a40e6, ack=ID\cfrederic-pc-36879-1473524915325-4\c3, message-id=ID\cfrederic-pc-36879-1473524915325-3\c1\c-1\c1\c5, subscription=28893439-5468-4d53-bf81-a491addd2b2f, priority=4, timestamp=1473524916178})
+	stomp://localhost:43243/queue/d92e7bac-493b-442e-a311-dc09b97a40e6
+2016-09-10 18:28:36 INFO  StompClientTest$LoggingFrameInterceptor:198 - StompFrame intercepted: 
+	NackFrame(action=NACK, body=null, headers={receipt=d1ce274a-df69-4325-86fd-6500ab1078fc, id=ID\cfrederic-pc-36879-1473524915325-4\c3})
+	stomp://localhost:43243
+2016-09-10 18:28:36 INFO  StompClientTest$LoggingFrameInterceptor:198 - StompFrame intercepted: 
+	SendFrame(action=SEND, body=Test, headers={destination=/topic/9086f68c-118f-4c98-841c-ce0dcdfbb684, receipt=db1bcff8-6713-4cc4-8ae8-a2e25a465189})
+	stomp://localhost:43243/topic/9086f68c-118f-4c98-841c-ce0dcdfbb684
+2016-09-10 18:28:36 INFO  StompClientTest$LoggingFrameInterceptor:198 - StompFrame intercepted: 
+	ReceiptFrame(action=RECEIPT, body=null, headers={receipt-id=d1ce274a-df69-4325-86fd-6500ab1078fc})
+	stomp://localhost:43243
+2016-09-10 18:28:36 INFO  StompClientTest$LoggingFrameInterceptor:198 - StompFrame intercepted: 
+	ReceiptFrame(action=RECEIPT, body=null, headers={receipt-id=db1bcff8-6713-4cc4-8ae8-a2e25a465189})
+	stomp://localhost:43243
+2016-09-10 18:28:36 INFO  StompClientTest$LoggingFrameInterceptor:198 - StompFrame intercepted: 
+	UnsubscribeFrame(action=UNSUBSCRIBE, body=null, headers={receipt=febf72fb-2c98-42da-92fb-6bea18a05045, id=086c0130-c6f2-4707-a2a5-4314b5dee8ec})
+	stomp://localhost:43243
+2016-09-10 18:28:36 INFO  StompClientTest$LoggingFrameInterceptor:198 - StompFrame intercepted: 
+	UnsubscribeFrame(action=UNSUBSCRIBE, body=null, headers={receipt=fca160ea-ce82-4346-bc88-4e10db0ac8eb, id=28893439-5468-4d53-bf81-a491addd2b2f})
+	stomp://localhost:43243
+2016-09-10 18:28:36 INFO  StompClientTest$LoggingFrameInterceptor:198 - StompFrame intercepted: 
+	UnsubscribeFrame(action=UNSUBSCRIBE, body=null, headers={receipt=ec460c69-3e64-44ac-8c8e-6254d9a0a5a0, id=3c59a6e0-7232-4081-ac7c-9a71578dd65d})
+	stomp://localhost:43243
+2016-09-10 18:28:36 INFO  StompClientTest$LoggingFrameInterceptor:198 - StompFrame intercepted: 
+	UnsubscribeFrame(action=UNSUBSCRIBE, body=null, headers={receipt=ee9a3e49-1c7b-47a0-b11b-79704fbe2fa1, id=717f12f9-f5d8-4ff6-aa8c-91683e1625a3})
+	stomp://localhost:43243
+2016-09-10 18:28:36 INFO  StompClientTest$LoggingFrameInterceptor:198 - StompFrame intercepted: 
+	UnsubscribeFrame(action=UNSUBSCRIBE, body=null, headers={receipt=4f34a196-5f6b-41ed-8b1c-0d13ab81cbb3, id=f7dfa695-87db-4b97-831a-2034f7b102f6})
+	stomp://localhost:43243
+2016-09-10 18:28:36 INFO  StompClientTest$LoggingFrameInterceptor:198 - StompFrame intercepted: 
+	UnsubscribeFrame(action=UNSUBSCRIBE, body=null, headers={receipt=8822e8e5-a447-4bd1-a0e9-c30e5fa75b05, id=face0c7a-039e-4d0b-aa66-d0b3341b6cf5})
+	stomp://localhost:43243
+2016-09-10 18:28:36 INFO  StompClientTest$LoggingFrameInterceptor:198 - StompFrame intercepted: 
+	DisconnectFrame(action=DISCONNECT, body=null, headers={})
+	stomp://localhost:43243
+2016-09-10 18:28:36 INFO  BrokerService:807 - Apache ActiveMQ 5.14.0 (localhost, ID:frederic-pc-36879-1473524915325-0:1) is shutting down
+2016-09-10 18:28:36 WARN  ProtocolConverter:285 - Exception occurred processing: <Unknown> -> org.apache.activemq.transport.stomp.ProtocolException: No subscription matched.
+2016-09-10 18:28:36 WARN  Transport:240 - Transport Connection to: tcp://127.0.0.1:49474 failed: java.io.IOException: Broker BrokerService[localhost] is being stopped
+2016-09-10 18:28:36 INFO  TcpTransportServer:485 - socketQueue interrupted - stopping
+2016-09-10 18:28:36 INFO  TransportConnector:243 - Could not accept connection during shutdown  : {}
+java.lang.InterruptedException
+	at java.util.concurrent.locks.AbstractQueuedSynchronizer$ConditionObject.reportInterruptAfterWait(AbstractQueuedSynchronizer.java:2014)
+	at java.util.concurrent.locks.AbstractQueuedSynchronizer$ConditionObject.awaitNanos(AbstractQueuedSynchronizer.java:2088)
+	at java.util.concurrent.LinkedBlockingQueue.poll(LinkedBlockingQueue.java:467)
+	at org.apache.activemq.transport.tcp.TcpTransportServer$1.run(TcpTransportServer.java:468)
+	at java.lang.Thread.run(Thread.java:745)
+2016-09-10 18:28:36 INFO  TransportConnector:294 - Connector stomp+nio://localhost:43243 stopped
+2016-09-10 18:28:36 INFO  BrokerService:868 - Apache ActiveMQ 5.14.0 (localhost, ID:frederic-pc-36879-1473524915325-0:1) uptime 1.068 seconds
+2016-09-10 18:28:36 INFO  BrokerService:870 - Apache ActiveMQ 5.14.0 (localhost, ID:frederic-pc-36879-1473524915325-0:1) is shutdown
+]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>
