@@ -1,7 +1,8 @@
 package de.lancom.systems.stomp.core;
 
 import java.io.IOException;
-import java.net.Socket;
+import java.net.InetSocketAddress;
+import java.nio.channels.SocketChannel;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
@@ -23,12 +24,12 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import de.lancom.systems.stomp.core.util.CountDown;
 import de.lancom.systems.stomp.core.wire.StompContext;
+import de.lancom.systems.stomp.core.wire.StompDeserializer;
 import de.lancom.systems.stomp.core.wire.StompFrame;
 import de.lancom.systems.stomp.core.wire.StompFrameHandler;
 import de.lancom.systems.stomp.core.wire.StompFrameInterceptor;
 import de.lancom.systems.stomp.core.wire.StompHeader;
-import de.lancom.systems.stomp.core.wire.StompInputStream;
-import de.lancom.systems.stomp.core.wire.StompOutputStream;
+import de.lancom.systems.stomp.core.wire.StompSerializer;
 import de.lancom.systems.stomp.core.wire.StompUrl;
 import de.lancom.systems.stomp.core.wire.frame.AckFrame;
 import de.lancom.systems.stomp.core.wire.frame.ConnectFrame;
@@ -53,6 +54,7 @@ import lombok.extern.slf4j.Slf4j;
 public class StompClient {
 
     private static final AtomicInteger COUNTER = new AtomicInteger();
+
 
     private final ExecutorService exchangeExecutor = Executors.newSingleThreadExecutor(
             new NamedGroupThreadFactory("Exchange")
@@ -135,7 +137,7 @@ public class StompClient {
 
             for (final ConnectionHolder connectionHolder : connectionHolders) {
                 try {
-                    connectionHolder.getSocket().close();
+                    connectionHolder.getChannel().close();
                 } catch (final Exception ex) {
                     if (log.isWarnEnabled()) {
                         log.warn("Could not close connectionHolder to " + connectionHolder.getBase(), ex);
@@ -186,14 +188,29 @@ public class StompClient {
     }
 
     /**
-     * Remove interceptor from frame interceptor queue.
+     * Remove interceptor instance from frame interceptor queue.
      *
      * @param interceptor interceptor
      */
     public void removeIntercetor(final StompFrameInterceptor interceptor) {
-        for (final FrameInterceptorHolder interceptorHolder : frameInterceptorHolders) {
-            if (Objects.equals(interceptorHolder.getInterceptor(), interceptor)) {
-                this.frameInterceptorHolders.remove(interceptorHolder);
+        final Iterator<FrameInterceptorHolder> iterator = frameInterceptorHolders.iterator();
+        while (iterator.hasNext()) {
+            if (Objects.equals(iterator.next().getInterceptor(), interceptor)) {
+                iterator.remove();
+            }
+        }
+    }
+
+    /**
+     * Remove interceptor of given type from frame interceptor queue.
+     *
+     * @param interceptorClass interceptor class
+     */
+    public void removeIntercetor(final Class<? extends StompFrameInterceptor> interceptorClass) {
+        final Iterator<FrameInterceptorHolder> iterator = frameInterceptorHolders.iterator();
+        while (iterator.hasNext()) {
+            if (interceptorClass.isAssignableFrom(iterator.next().getClass())) {
+                iterator.remove();
             }
         }
     }
@@ -451,11 +468,9 @@ public class StompClient {
             }
         }
         if (create) {
-            final ConnectionHolder connectionHolder = new ConnectionHolder(
-                    base,
-                    context,
-                    new Socket(url.getHost(), url.getPort())
-            );
+            final SocketChannel channel = SocketChannel.open(new InetSocketAddress(url.getHost(), url.getPort()));
+            channel.configureBlocking(false);
+            final ConnectionHolder connectionHolder = new ConnectionHolder(base, context, channel);
             try {
                 this.connectionHolders.add(connectionHolder);
                 final ConnectFrame connectFrame = this.context.createFrame(ConnectFrame.class);
@@ -553,10 +568,17 @@ public class StompClient {
             log.debug("Sending " + frame);
         }
 
+        final StompUrl targetUrl;
+        if (frame.hasHeader(StompHeader.DESTINATION)) {
+            targetUrl = url.withDestination(frame.getHeader(StompHeader.DESTINATION));
+        } else {
+            targetUrl = url;
+        }
+
         final ConnectionHolder connectionHolder = getConnection(url, true);
         final CompletableFuture<Boolean> future = new CompletableFuture<>();
 
-        connectionHolder.getOutgoingQueue().add(new FrameSenderHolder(url, frame, future));
+        connectionHolder.getOutgoingQueue().add(new FrameSenderHolder(targetUrl, frame, future));
         return future;
     }
 
@@ -618,7 +640,7 @@ public class StompClient {
             }
             while (running.get()) {
                 for (final ConnectionHolder connectionHolder : connectionHolders) {
-                    if (!connectionHolder.getSocket().isInputShutdown()) {
+                    if (connectionHolder.getChannel().isConnected()) {
                         writeFrames(connectionHolder);
                         readFrames(connectionHolder);
                     }
@@ -644,7 +666,7 @@ public class StompClient {
                     frame = applyFrameInterceptors(holder.getUrl(), frame);
 
                     if (frame != null) {
-                        connectionHolder.getOutputStream().writeFrame(frame);
+                        connectionHolder.getSerializer().writeFrame(frame);
                     }
                     outgoingIterator.remove();
                     holder.getFuture().complete(true);
@@ -664,7 +686,7 @@ public class StompClient {
         private void readFrames(final ConnectionHolder connectionHolder) {
             while (true) {
                 try {
-                    StompFrame frame = connectionHolder.getInputStream().readFrame();
+                    StompFrame frame = connectionHolder.getDeserializer().readFrame();
                     if (frame != null) {
                         if (log.isDebugEnabled()) {
                             log.debug("Got " + frame);
@@ -808,9 +830,9 @@ public class StompClient {
     private static class ConnectionHolder {
 
         private final StompUrl base;
-        private final Socket socket;
-        private final StompInputStream inputStream;
-        private final StompOutputStream outputStream;
+        private final SocketChannel channel;
+        private final StompDeserializer deserializer;
+        private final StompSerializer serializer;
         private final Map<String, SubscriptionHolder> subscriptionMap = new ConcurrentSkipListMap<>();
 
         private Queue<FrameSenderHolder> outgoingQueue = new ConcurrentLinkedQueue<>();
@@ -821,18 +843,18 @@ public class StompClient {
          *
          * @param base base url
          * @param context context
-         * @param socket sockert
+         * @param channel channel channel
          * @throws IOException if an I/O error occurs
          */
         ConnectionHolder(
                 @NonNull final StompUrl base,
                 @NonNull final StompContext context,
-                @NonNull final Socket socket
+                @NonNull final SocketChannel channel
         ) throws IOException {
             this.base = base;
-            this.socket = socket;
-            this.inputStream = new StompInputStream(context, socket.getInputStream());
-            this.outputStream = new StompOutputStream(context, socket.getOutputStream());
+            this.channel = channel;
+            this.deserializer = new StompDeserializer(context, channel);
+            this.serializer = new StompSerializer(context, channel);
         }
 
     }

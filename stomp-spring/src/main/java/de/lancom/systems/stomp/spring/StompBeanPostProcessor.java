@@ -1,4 +1,4 @@
-package de.lancom.systems.stomp.core.spring;
+package de.lancom.systems.stomp.spring;
 
 import java.io.IOException;
 import java.lang.reflect.Field;
@@ -15,6 +15,7 @@ import de.lancom.systems.stomp.core.StompClient;
 import de.lancom.systems.stomp.core.util.StringUtil;
 import de.lancom.systems.stomp.core.wire.StompFrame;
 import de.lancom.systems.stomp.core.wire.StompFrameHandler;
+import de.lancom.systems.stomp.core.wire.StompHeader;
 import de.lancom.systems.stomp.core.wire.StompUrl;
 import de.lancom.systems.stomp.core.wire.frame.SendFrame;
 import de.lancom.systems.stomp.core.wire.frame.SubscribeFrame;
@@ -177,12 +178,31 @@ public class StompBeanPostProcessor implements BeanPostProcessor, ApplicationLis
             switch (method.getName()) {
                 case "send": {
                     final Object value = args[0];
+
                     if (value != null) {
+                        final SendFrame sendFrame;
                         if (value instanceof SendFrame) {
-                            return client.send(url, (SendFrame) value);
+                            sendFrame = (SendFrame) value;
                         } else {
-                            return client.send(url, value.toString());
+                            sendFrame = new SendFrame();
+                            if (value instanceof String) {
+                                sendFrame.setBodyAsString((String) value);
+                            } else if (value instanceof byte[]) {
+                                sendFrame.setBody((byte[]) value);
+                            } else {
+                                throw new RuntimeException(String.format(
+                                        "Send body of type %s is not supported",
+                                        value.getClass()
+                                ));
+                            }
+
+                            return client.send(url, sendFrame);
                         }
+
+                        if (!sendFrame.hasHeader(StompHeader.DESTINATION)) {
+                            sendFrame.setDestination(url.getDestination());
+                        }
+                        return client.send(url, (SendFrame) value);
                     }
                 }
                 default: {
