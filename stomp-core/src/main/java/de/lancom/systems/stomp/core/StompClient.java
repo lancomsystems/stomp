@@ -191,9 +191,10 @@ public class StompClient {
      * @param interceptor interceptor
      */
     public void removeIntercetor(final StompFrameInterceptor interceptor) {
-        for (final FrameInterceptorHolder interceptorHolder : frameInterceptorHolders) {
-            if (Objects.equals(interceptorHolder.getInterceptor(), interceptor)) {
-                this.frameInterceptorHolders.remove(interceptorHolder);
+        final Iterator<FrameInterceptorHolder> iterator = frameInterceptorHolders.iterator();
+        while (iterator.hasNext()) {
+            if (Objects.equals(iterator.next().getInterceptor(), interceptor)) {
+                iterator.remove();
             }
         }
     }

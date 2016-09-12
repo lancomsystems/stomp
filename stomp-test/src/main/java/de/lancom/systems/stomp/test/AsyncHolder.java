@@ -105,7 +105,7 @@ public final class AsyncHolder<T> {
      * @param unit timout unit
      * @return value
      */
-    public synchronized T get(final int timeout, final TimeUnit unit) {
+    public T get(final int timeout, final TimeUnit unit) {
         return get(Math.max(values.size(), 1), timeout, unit);
     }
 
@@ -117,10 +117,20 @@ public final class AsyncHolder<T> {
      * @param unit timout unit
      * @return value
      */
-    public synchronized T get(final int position, final int timeout, final TimeUnit unit) {
+    public T get(final int position, final int timeout, final TimeUnit unit) {
+        expect(position, timeout, unit);
+        return get(position);
+    }
+
+    /**
+     * Wait for the given entry.
+     *
+     * @param count count
+     */
+    public synchronized void expect(final int count, final int timeout, final TimeUnit unit) {
         try {
             final long start = System.currentTimeMillis();
-            while (position > values.size()) {
+            while (count > values.size()) {
                 final long remaining = System.currentTimeMillis() - start + unit.toMillis(timeout);
                 if (remaining > 0) {
                     this.wait(remaining);
@@ -128,9 +138,8 @@ public final class AsyncHolder<T> {
                     break;
                 }
             }
-            return get(position);
         } catch (final InterruptedException ex) {
-            return null;
+            return;
         }
     }
 

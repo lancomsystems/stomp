@@ -1,16 +1,14 @@
 package de.lancom.systems.stomp.spring;
 
 import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.junit.Assert.assertThat;
 
+import java.nio.charset.StandardCharsets;
 import java.util.concurrent.TimeUnit;
 
 import de.lancom.systems.stomp.core.StompClient;
-import de.lancom.systems.stomp.core.spring.EnableStomp;
-import de.lancom.systems.stomp.core.spring.StompDestination;
-import de.lancom.systems.stomp.core.spring.StompProducer;
-import de.lancom.systems.stomp.core.wire.StompFrame;
+import de.lancom.systems.stomp.core.wire.StompFrameInterceptor;
+import de.lancom.systems.stomp.core.wire.frame.SendFrame;
 import de.lancom.systems.stomp.test.AsyncHolder;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.Test;
@@ -29,24 +27,78 @@ public class ProducerTest {
     private StompClient client;
 
     @StompDestination("${embedded.broker.url}/topic/test")
-    private StompProducer<String> producer;
+    private StompProducer<SendFrame> producer1;
+
+    @StompDestination("${embedded.broker.url}/topic/test")
+    private StompProducer<String> producer2;
+
+    @StompDestination("${embedded.broker.url}/topic/test")
+    private StompProducer<byte[]> producer3;
 
     @Test
-    public void test() {
-        final AsyncHolder<StompFrame> holder = AsyncHolder.create();
+    public void produceFrame() {
+        final AsyncHolder<String> holder = AsyncHolder.create();
 
-        client.addInterceptor((u, f) -> {
-            holder.set(f);
+        StompFrameInterceptor interceptor = (u, f) -> {
+            holder.set(f.getBodyAsString());
             return f;
-        });
+        };
 
-        producer.send("Test");
+        try {
+            client.addInterceptor(interceptor, "SEND");
 
-        final StompFrame frame = holder.get(2, TimeUnit.SECONDS);
+            final SendFrame sendFrame = new SendFrame();
+            sendFrame.setBodyAsString("Test1");
 
-        assertThat(frame, is(notNullValue()));
-        assertThat(frame.getBodyAsString(), is("Test"));
+            producer1.send(sendFrame);
 
+            assertThat(holder.get(1, 2, TimeUnit.SECONDS), is("Test1"));
+
+        } finally {
+            client.removeIntercetor(interceptor);
+        }
+    }
+
+    @Test
+    public void produceString() {
+        final AsyncHolder<String> holder = AsyncHolder.create();
+
+        StompFrameInterceptor interceptor = (u, f) -> {
+            holder.set(f.getBodyAsString());
+            return f;
+        };
+
+        try {
+            client.addInterceptor(interceptor, "SEND");
+
+            producer2.send("Test2");
+
+            assertThat(holder.get(1, 2, TimeUnit.SECONDS), is("Test2"));
+
+        } finally {
+            client.removeIntercetor(interceptor);
+        }
+    }
+
+    @Test
+    public void produceByteArray() {
+        final AsyncHolder<String> holder = AsyncHolder.create();
+
+        StompFrameInterceptor interceptor = (u, f) -> {
+            holder.set(f.getBodyAsString());
+            return f;
+        };
+
+        try {
+            client.addInterceptor(interceptor, "SEND");
+
+            producer3.send("Test3".getBytes(StandardCharsets.UTF_8));
+
+            assertThat(holder.get(1, 2, TimeUnit.SECONDS), is("Test3"));
+
+        } finally {
+            client.removeIntercetor(interceptor);
+        }
     }
 
 }

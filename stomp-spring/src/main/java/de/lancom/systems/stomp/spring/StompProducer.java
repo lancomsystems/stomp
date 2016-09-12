@@ -1,4 +1,4 @@
-package de.lancom.systems.stomp.core.spring;
+package de.lancom.systems.stomp.spring;
 
 import java.util.concurrent.CompletableFuture;
 

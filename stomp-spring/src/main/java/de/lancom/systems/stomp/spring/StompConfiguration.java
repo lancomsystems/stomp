@@ -1,4 +1,4 @@
-package de.lancom.systems.stomp.core.spring;
+package de.lancom.systems.stomp.spring;
 
 import de.lancom.systems.stomp.core.StompClient;
 import org.springframework.context.annotation.Bean;

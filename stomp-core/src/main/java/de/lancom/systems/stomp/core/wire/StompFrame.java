@@ -68,6 +68,16 @@ public class StompFrame {
     }
 
     /**
+     * Set body as byte array and set content length header.
+     *
+     * @param body body
+     */
+    public void setBody(final byte[] body) {
+        this.body = body;
+        this.setContentLength(body.length);
+    }
+
+    /**
      * Get body as string using UTF-8 encoding.
      *
      * @return body
