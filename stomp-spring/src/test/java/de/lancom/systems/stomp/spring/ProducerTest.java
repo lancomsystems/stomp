@@ -12,12 +12,10 @@ import de.lancom.systems.stomp.core.spring.StompDestination;
 import de.lancom.systems.stomp.core.spring.StompProducer;
 import de.lancom.systems.stomp.core.wire.StompFrame;
 import de.lancom.systems.stomp.test.AsyncHolder;
-import de.lancom.systems.stomp.test.Broker;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Bean;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
@@ -30,13 +28,8 @@ public class ProducerTest {
     @Autowired
     private StompClient client;
 
-    @StompDestination("stomp://localhost:9000/topic/test")
+    @StompDestination("${embedded.broker.url}/topic/test")
     private StompProducer<String> producer;
-
-    @Bean(initMethod = "start", destroyMethod = "stop")
-    public Broker broker() throws Exception {
-        return new Broker(9000);
-    }
 
     @Test
     public void test() {

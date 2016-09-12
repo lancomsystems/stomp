@@ -1,1 +1,0 @@
-org.springframework.boot.autoconfigure.EnableAutoConfiguration=de.lancom.systems.stomp.core.spring.StompConfiguration

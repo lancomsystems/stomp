@@ -11,7 +11,7 @@ import java.util.concurrent.TimeUnit;
 import de.lancom.systems.stomp.core.StompClient;
 import de.lancom.systems.stomp.core.wire.frame.SubscribeFrame;
 import de.lancom.systems.stomp.test.AsyncHolder;
-import de.lancom.systems.stomp.test.Broker;
+import de.lancom.systems.stomp.test.EmbeddedStompBroker;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -19,7 +19,7 @@ import org.junit.Test;
 
 public class StompClientTest {
 
-    protected static final Broker BROKER = new Broker();
+    protected static final EmbeddedStompBroker BROKER = new EmbeddedStompBroker();
     protected static final StompClient CLIENT = new StompClient();
     protected static final int HOLDER_TIMEOUT_SECONDS = 2;
 
