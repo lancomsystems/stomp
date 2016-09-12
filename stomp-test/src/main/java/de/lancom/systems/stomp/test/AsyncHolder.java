@@ -133,7 +133,7 @@ public final class AsyncHolder<T> {
         try {
             final long start = System.currentTimeMillis();
             while (count > values.size()) {
-                final long remaining = System.currentTimeMillis() - start + unit.toMillis(timeout);
+                final long remaining =  start - System.currentTimeMillis() + unit.toMillis(timeout);
                 if (remaining > 0) {
                     this.wait(remaining);
                 } else {
