@@ -186,7 +186,7 @@ public class StompClient {
     }
 
     /**
-     * Remove interceptor from frame interceptor queue.
+     * Remove interceptor instance from frame interceptor queue.
      *
      * @param interceptor interceptor
      */
@@ -194,6 +194,20 @@ public class StompClient {
         final Iterator<FrameInterceptorHolder> iterator = frameInterceptorHolders.iterator();
         while (iterator.hasNext()) {
             if (Objects.equals(iterator.next().getInterceptor(), interceptor)) {
+                iterator.remove();
+            }
+        }
+    }
+
+    /**
+     * Remove interceptor of given type from frame interceptor queue.
+     *
+     * @param interceptorClass interceptor class
+     */
+    public void removeIntercetor(final Class<? extends  StompFrameInterceptor> interceptorClass) {
+        final Iterator<FrameInterceptorHolder> iterator = frameInterceptorHolders.iterator();
+        while (iterator.hasNext()) {
+            if (interceptorClass.isAssignableFrom(iterator.next().getClass())) {
                 iterator.remove();
             }
         }

@@ -196,7 +196,7 @@ public class StompBeanPostProcessor implements BeanPostProcessor, ApplicationLis
                                 ));
                             }
 
-                            return client.send(url,sendFrame);
+                            return client.send(url, sendFrame);
                         }
 
                         if (!sendFrame.hasHeader(StompHeader.DESTINATION)) {

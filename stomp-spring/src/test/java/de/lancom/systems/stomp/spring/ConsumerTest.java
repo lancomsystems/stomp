@@ -26,7 +26,7 @@ import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 @RunWith(SpringJUnit4ClassRunner.class)
 public class ConsumerTest {
 
-    private static final String URL = "${embedded.broker.url}/topic/test";
+    private static final String URL = "${embedded.broker.url}/topic/b0d6bdcc-a30e-4667-a92f-5481ab6fa9bd";
 
     private static final AsyncHolder<String> HOLDER_GENERAL = AsyncHolder.create();
     private static final AsyncHolder<String> HOLDER_A = AsyncHolder.create();
@@ -58,7 +58,6 @@ public class ConsumerTest {
 
     @Test
     public void consumeFiltered() throws Exception {
-
         final StompUrl url = StompUrl.parse(environment.resolvePlaceholders(URL));
 
         final SendFrame sendFrame1 = new SendFrame();
