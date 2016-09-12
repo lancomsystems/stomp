@@ -23,9 +23,9 @@ import lombok.NonNull;
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.config.BeanPostProcessor;
-import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.ApplicationListener;
 import org.springframework.context.event.ContextRefreshedEvent;
+import org.springframework.core.env.Environment;
 import org.springframework.util.ReflectionUtils;
 
 /**
@@ -39,7 +39,7 @@ public class StompBeanPostProcessor implements BeanPostProcessor, ApplicationLis
     private StompClient client;
 
     @Autowired
-    private ConfigurableBeanFactory beanFactory;
+    private Environment environment;
 
     @Override
     public Object postProcessBeforeInitialization(final Object bean, final String beanName) throws BeansException {
@@ -55,7 +55,7 @@ public class StompBeanPostProcessor implements BeanPostProcessor, ApplicationLis
                 final StompDestination annotation = field.getAnnotation(StompDestination.class);
 
                 if (contentType == StompProducer.class && annotation != null) {
-                    final StompUrl url = StompUrl.parse(beanFactory.resolveEmbeddedValue(annotation.value()));
+                    final StompUrl url = StompUrl.parse(environment.resolvePlaceholders(annotation.value()));
                     ReflectionUtils.makeAccessible(field);
                     ReflectionUtils.setField(field, bean, Proxy.newProxyInstance(
                             bean.getClass().getClassLoader(),
@@ -87,11 +87,11 @@ public class StompBeanPostProcessor implements BeanPostProcessor, ApplicationLis
                         final Class contentType = parameterTypes.length > 0 ? parameterTypes[0] : null;
 
                         if (contentType == StompFrame.class) {
-                            final StompUrl url = StompUrl.parse(beanFactory.resolveEmbeddedValue(annotation.value()));
+                            final StompUrl url = StompUrl.parse(environment.resolvePlaceholders(annotation.value()));
                             final String id;
 
                             if (!StringUtil.isBlank(annotation.id())) {
-                                id = beanFactory.resolveEmbeddedValue(annotation.id());
+                                id = environment.resolvePlaceholders(annotation.id());
                             } else {
                                 id = UUID.randomUUID().toString();
                             }

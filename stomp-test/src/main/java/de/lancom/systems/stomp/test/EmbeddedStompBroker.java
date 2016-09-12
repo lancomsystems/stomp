@@ -6,9 +6,9 @@ import lombok.Getter;
 import org.apache.activemq.broker.BrokerService;
 
 /**
- * Embedded active mq broker.
+ * Embedded stomp broke using Active MQ.
  */
-public class Broker {
+public class EmbeddedStompBroker {
 
     @Getter
     private BrokerService brokerService;
@@ -19,7 +19,7 @@ public class Broker {
     /**
      * Create broker with random port.
      */
-    public Broker() {
+    public EmbeddedStompBroker() {
         this(0);
     }
 
@@ -28,7 +28,7 @@ public class Broker {
      *
      * @param port port
      */
-    public Broker(final int port) {
+    public EmbeddedStompBroker(final int port) {
         this.port = port;
     }
 

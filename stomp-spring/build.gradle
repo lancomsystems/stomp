@@ -1,6 +1,6 @@
 dependencies {
 
-    compileOnly group: 'org.projectlombok', name: 'lombok', version: '1.16.8'
+    compileOnly group: 'org.projectlombok', name: 'lombok', version: '1.16.10'
 
     compile project(':stomp-core')
     compile group: 'org.springframework', name: 'spring-context', version: '4.0.0.RELEASE'
