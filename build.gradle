@@ -15,6 +15,18 @@ subprojects {
     apply plugin: 'maven'
     apply plugin: 'signing'
 
+    def conf = ext
+
+    conf['publish.url'] = rootProject.findProperty("publishUrl") ?: 'sonatype'
+    conf['publish.user'] = rootProject.findProperty("publishUser")
+    conf['publish.password'] = rootProject.findProperty("publishPassword")
+    conf['signing.password'] = rootProject.findProperty("signingPassword")
+    if (conf['signing.password'] != null) {
+        conf['signing.keyId'] = '72819AEA'
+        conf['signing.secretKeyRingFile'] = rootProject.file('signing.pgp')
+    }
+
+
     sourceCompatibility = 1.8
     targetCompatibility = 1.8
 
@@ -38,32 +50,14 @@ subprojects {
     }
 
     signing {
+        required { gradle.taskGraph.hasTask("uploadArchives") }
         sign configurations.archives
     }
-
-    def conf = ext
-
-    conf['signing.keyId'] = '72819AEA'
-    conf['signing.secretKeyRingFile'] = rootProject.file('signing.pgp')
-    conf['signing.password'] = rootProject.findProperty("signingPassword")
-    conf['publish.url'] = rootProject.findProperty("publishUrl")
-    conf['publish.user'] = rootProject.findProperty("publishUser")
-    conf['publish.password'] = rootProject.findProperty("publishPassword")
 
     uploadArchives {
         repositories {
             mavenDeployer {
-                if (conf['publish.url'] != null) {
-
-                    repository(url: conf['publish.url']) {
-                        if (conf['publish.user'] != null && conf['publish.password'] != null) {
-                            authentication(userName: conf['publish.user'], password: conf['publish.password'])
-                        }
-                    }
-
-
-                } else {
-
+                if (conf['publish.url'] == 'sonatype') {
                     beforeDeployment { MavenDeployment deployment -> signing.signPom(deployment) }
 
                     repository(url: 'https://oss.sonatype.org/service/local/staging/deploy/maven2') {
@@ -77,7 +71,12 @@ subprojects {
                             authentication(userName: conf['publish.user'], password: conf['publish.password'])
                         }
                     }
-
+                } else {
+                    repository(url: conf['publish.url']) {
+                        if (conf['publish.user'] != null && conf['publish.password'] != null) {
+                            authentication(userName: conf['publish.user'], password: conf['publish.password'])
+                        }
+                    }
                 }
 
                 pom.project {
