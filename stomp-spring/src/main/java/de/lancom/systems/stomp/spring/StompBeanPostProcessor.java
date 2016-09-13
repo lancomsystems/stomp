@@ -84,80 +84,83 @@ public class StompBeanPostProcessor implements BeanPostProcessor, ApplicationLis
                 public void doWith(final Method method) throws IllegalArgumentException, IllegalAccessException {
                     final StompSubscription annotation = method.getAnnotation(StompSubscription.class);
                     if (annotation != null) {
-                        final Class<?>[] parameterTypes = method.getParameterTypes();
-                        final Class contentType = parameterTypes.length > 0 ? parameterTypes[0] : null;
 
-                        if (contentType == StompFrame.class) {
-                            final StompUrl url = StompUrl.parse(environment.resolvePlaceholders(annotation.value()));
-                            final String id;
+                        final Class returnType = method.getReturnType();
+                        final Class[] parameterTypes = method.getParameterTypes();
 
-                            if (!StringUtil.isBlank(annotation.id())) {
-                                id = environment.resolvePlaceholders(annotation.id());
+                        final Class[] handleFrame = {
+                                StompFrame.class
+                        };
+                        final Class[] handleString = {
+                                String.class
+                        };
+                        final Class[] handleUrlAndFrame = {
+                                StompUrl.class, StompFrame.class
+                        };
+
+                        final StompFrameHandler handler;
+                        if (returnType == boolean.class) {
+                            if (Arrays.equals(parameterTypes, handleFrame)) {
+                                handler = (u, f) -> (boolean) method.invoke(bean, f);
+                            } else if (Arrays.equals(parameterTypes, handleString)) {
+                                handler = (u, f) -> (boolean) method.invoke(bean, f.getBodyAsString());
+                            } else if (Arrays.equals(parameterTypes, handleUrlAndFrame)) {
+                                handler = (u, f) -> (boolean) method.invoke(bean, u, f);
                             } else {
-                                id = UUID.randomUUID().toString();
+                                handler = null;
                             }
-
-                            final SubscribeFrame frame = new SubscribeFrame();
-                            frame.setId(id);
-                            frame.setDestination(url.getDestination());
-                            if (!StringUtil.isBlank(annotation.selector())) {
-                                frame.setSelector(annotation.selector());
-                            }
-                            try {
-                                client.subscribe(url, frame, new ConsumerHandler(bean, method));
-                            } catch (final IOException ex) {
-                                throw new RuntimeException("Could not create subscription for " + annotation, ex);
+                        } else {
+                            if (Arrays.equals(parameterTypes, handleFrame)) {
+                                handler = (u, f) -> {
+                                    method.invoke(bean, f);
+                                    return true;
+                                };
+                            } else if (Arrays.equals(parameterTypes, handleString)) {
+                                handler = (u, f) -> {
+                                    method.invoke(bean, f.getBodyAsString());
+                                    return true;
+                                };
+                            } else if (Arrays.equals(parameterTypes, handleUrlAndFrame)) {
+                                handler = (u, f) -> {
+                                    method.invoke(bean, u, f);
+                                    return true;
+                                };
+                            } else {
+                                handler = null;
                             }
                         }
+
+                        if (handler == null) {
+                            throw new RuntimeException(String.format("Method %s is not supported as consumer", method));
+                        }
+
+                        final StompUrl url = StompUrl.parse(environment.resolvePlaceholders(annotation.value()));
+                        final String id;
+
+                        if (!StringUtil.isBlank(annotation.id())) {
+                            id = environment.resolvePlaceholders(annotation.id());
+                        } else {
+                            id = UUID.randomUUID().toString();
+                        }
+
+                        final SubscribeFrame frame = new SubscribeFrame();
+                        frame.setId(id);
+                        frame.setDestination(url.getDestination());
+                        frame.setAck(annotation.ackMode().value());
+
+                        if (!StringUtil.isBlank(annotation.selector())) {
+                            frame.setSelector(annotation.selector());
+                        }
+
+                        try {
+                            client.subscribe(url, frame, handler);
+                        } catch (final IOException ex) {
+                            throw new RuntimeException("Could not create subscription for " + annotation, ex);
+                        }
+
                     }
                 }
             });
-        }
-    }
-
-    /**
-     * Handler for stomp subscriptions.
-     */
-    @AllArgsConstructor
-    private static class ConsumerHandler implements StompFrameHandler {
-
-        @NonNull
-        private final Object target;
-
-        @NonNull
-        private final Method method;
-
-        @Override
-        public boolean handle(final StompUrl url, final StompFrame frame) throws Exception {
-            final Class returnType = method.getReturnType();
-            final Class[] parameterTypes = method.getParameterTypes();
-
-            final Class[] handleOne = {
-                    StompFrame.class
-            };
-            final Class[] handleTwo = {
-                    StompUrl.class, StompFrame.class
-            };
-
-            if (returnType == boolean.class) {
-                if (Arrays.equals(parameterTypes, handleOne)) {
-                    return (boolean) method.invoke(target, frame);
-                } else if (Arrays.equals(parameterTypes, handleTwo)) {
-                    return (boolean) method.invoke(target, url, frame);
-                } else {
-                    return false;
-                }
-            } else {
-                if (Arrays.equals(parameterTypes, handleOne)) {
-                    method.invoke(target, frame);
-                    return true;
-                } else if (Arrays.equals(parameterTypes, handleTwo)) {
-                    method.invoke(target, url, frame);
-                    return true;
-                } else {
-                    return false;
-                }
-            }
         }
     }
 

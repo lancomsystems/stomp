@@ -99,6 +99,16 @@ public final class AsyncHolder<T> {
     }
 
     /**
+     * Check if the given value is available.
+     *
+     * @param value value
+     * @return availability
+     */
+    public boolean contains(final T value) {
+        return values.contains(value);
+    }
+
+    /**
      * Get value at the last position or wait until timeout.
      *
      * @param timeout timeout value
@@ -133,7 +143,7 @@ public final class AsyncHolder<T> {
         try {
             final long start = System.currentTimeMillis();
             while (count > values.size()) {
-                final long remaining =  start - System.currentTimeMillis() + unit.toMillis(timeout);
+                final long remaining = start - System.currentTimeMillis() + unit.toMillis(timeout);
                 if (remaining > 0) {
                     this.wait(remaining);
                 } else {

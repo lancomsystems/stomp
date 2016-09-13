@@ -8,7 +8,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.concurrent.TimeUnit;
 
 import de.lancom.systems.stomp.core.StompClient;
-import de.lancom.systems.stomp.core.wire.StompFrameInterceptor;
+import de.lancom.systems.stomp.core.wire.StompInterceptors;
 import de.lancom.systems.stomp.core.wire.StompUrl;
 import de.lancom.systems.stomp.core.wire.frame.SendFrame;
 import de.lancom.systems.stomp.test.AsyncHolder;
@@ -49,14 +49,7 @@ public class ProducerTest {
 
         final AsyncHolder<String> holder = AsyncHolder.create();
 
-        client.removeIntercetor(StompFrameInterceptor.class);
-
-        client.addInterceptor((u, f) -> {
-            if(u.equals(url)) {
-                holder.set(f.getBodyAsString());
-            }
-            return f;
-        }, "SEND");
+        client.addInterceptor(StompInterceptors.forBodyAsString(url, holder::set), "SEND");
 
         final SendFrame sendFrame = new SendFrame();
         sendFrame.setBodyAsString("Test1");
@@ -72,14 +65,7 @@ public class ProducerTest {
         final StompUrl url = StompUrl.parse(environment.resolvePlaceholders(URL));
         final AsyncHolder<String> holder = AsyncHolder.create();
 
-        client.removeIntercetor(StompFrameInterceptor.class);
-
-        client.addInterceptor((u, f) -> {
-            if(u.equals(url)) {
-                holder.set(f.getBodyAsString());
-            }
-            return f;
-        }, "SEND");
+        client.addInterceptor(StompInterceptors.forBodyAsString(url, holder::set), "SEND");
 
         final SendFrame sendFrame = new SendFrame();
         sendFrame.setBodyAsString("Test1");
@@ -96,14 +82,7 @@ public class ProducerTest {
         final StompUrl url = StompUrl.parse(environment.resolvePlaceholders(URL));
         final AsyncHolder<String> holder = AsyncHolder.create();
 
-        client.removeIntercetor(StompFrameInterceptor.class);
-
-        client.addInterceptor((u, f) -> {
-            if(u.equals(url)) {
-                holder.set(f.getBodyAsString());
-            }
-            return f;
-        }, "SEND");
+        client.addInterceptor(StompInterceptors.forBodyAsString(url, holder::set), "SEND");
 
         producer2.send("Test2");
 
@@ -116,14 +95,7 @@ public class ProducerTest {
         final StompUrl url = StompUrl.parse(environment.resolvePlaceholders(URL));
         final AsyncHolder<String> holder = AsyncHolder.create();
 
-        client.removeIntercetor(StompFrameInterceptor.class);
-
-        client.addInterceptor((u, f) -> {
-            if(u.equals(url)) {
-                holder.set(f.getBodyAsString());
-            }
-            return f;
-        }, "SEND");
+        client.addInterceptor(StompInterceptors.forBodyAsString(url, holder::set), "SEND");
 
         producer3.send("Test3".getBytes(StandardCharsets.UTF_8));
 
