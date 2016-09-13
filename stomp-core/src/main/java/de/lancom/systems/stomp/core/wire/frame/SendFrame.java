@@ -9,10 +9,42 @@ import de.lancom.systems.stomp.core.wire.StompHeader;
 public class SendFrame extends ClientFrame {
 
     /**
-     * Default constructor.
+     * Create empty send frame.
      */
     public SendFrame() {
         super(StompAction.SEND.value());
+    }
+
+    /**
+     * Create send frame with destination.
+     *
+     * @param destination destination
+     */
+    public SendFrame(final String destination) {
+        this();
+        this.setDestination(destination);
+    }
+
+    /**
+     * Create send frame with destination and body.
+     *
+     * @param destination destination
+     * @param body body
+     */
+    public SendFrame(final String destination, final String body) {
+        this(destination);
+        this.setBodyAsString(body);
+    }
+
+    /**
+     * Create send frame with destination and body.
+     *
+     * @param destination destination
+     * @param body body
+     */
+    public SendFrame(final String destination, final byte[] body) {
+        this(destination);
+        this.setBody(body);
     }
 
     /**

@@ -191,7 +191,7 @@ public class StompClientTest {
     }
 
     @Slf4j
-    private static class LoggingFrameInterceptor implements StompFrameInterceptor {
+    private static class LoggingFrameInterceptor implements StompInterceptor {
 
         @Override
         public StompFrame intercept(final StompUrl url, final StompFrame frame) throws Exception {

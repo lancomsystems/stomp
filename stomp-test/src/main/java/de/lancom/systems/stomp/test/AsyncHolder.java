@@ -99,6 +99,16 @@ public final class AsyncHolder<T> {
     }
 
     /**
+     * Check if the given value is available.
+     *
+     * @param value value
+     * @return availability
+     */
+    public boolean contains(final T value) {
+        return values.contains(value);
+    }
+
+    /**
      * Get value at the last position or wait until timeout.
      *
      * @param timeout timeout value
@@ -128,20 +138,22 @@ public final class AsyncHolder<T> {
      * @param count count
      * @param timeout timeout value
      * @param unit timout unit
+     * @return number of expected values reached
      */
-    public synchronized void expect(final int count, final int timeout, final TimeUnit unit) {
+    public synchronized boolean expect(final int count, final int timeout, final TimeUnit unit) {
         try {
             final long start = System.currentTimeMillis();
             while (count > values.size()) {
-                final long remaining =  start - System.currentTimeMillis() + unit.toMillis(timeout);
+                final long remaining = start - System.currentTimeMillis() + unit.toMillis(timeout);
                 if (remaining > 0) {
                     this.wait(remaining);
                 } else {
                     break;
                 }
             }
+            return values.size() >= count;
         } catch (final InterruptedException ex) {
-            return;
+            return false;
         }
     }
 

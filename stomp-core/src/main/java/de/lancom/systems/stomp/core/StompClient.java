@@ -23,11 +23,12 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import de.lancom.systems.stomp.core.util.CountDown;
+import de.lancom.systems.stomp.core.util.NamedDaemonThreadFactory;
 import de.lancom.systems.stomp.core.wire.StompContext;
 import de.lancom.systems.stomp.core.wire.StompDeserializer;
 import de.lancom.systems.stomp.core.wire.StompFrame;
 import de.lancom.systems.stomp.core.wire.StompFrameHandler;
-import de.lancom.systems.stomp.core.wire.StompFrameInterceptor;
+import de.lancom.systems.stomp.core.wire.StompInterceptor;
 import de.lancom.systems.stomp.core.wire.StompHeader;
 import de.lancom.systems.stomp.core.wire.StompSerializer;
 import de.lancom.systems.stomp.core.wire.StompUrl;
@@ -39,7 +40,6 @@ import de.lancom.systems.stomp.core.wire.frame.NackFrame;
 import de.lancom.systems.stomp.core.wire.frame.SendFrame;
 import de.lancom.systems.stomp.core.wire.frame.SubscribeFrame;
 import de.lancom.systems.stomp.core.wire.frame.UnsubscribeFrame;
-import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.Getter;
@@ -55,20 +55,16 @@ public class StompClient {
 
     private static final AtomicInteger COUNTER = new AtomicInteger();
 
+    private final ExecutorService exchangeExecutor = Executors.newSingleThreadExecutor(createThreadFactory("Exchange"));
+    private final ExecutorService consumerExecutor = Executors.newSingleThreadExecutor(createThreadFactory("Consumer"));
 
-    private final ExecutorService exchangeExecutor = Executors.newSingleThreadExecutor(
-            new NamedGroupThreadFactory("Exchange")
-    );
-    private final ExecutorService consumerExecutor = Executors.newSingleThreadExecutor(
-            new NamedGroupThreadFactory("Consumer")
-    );
     private final List<ConnectionHolder> connectionHolders = new CopyOnWriteArrayList<>();
     private final AtomicBoolean running = new AtomicBoolean(false);
 
     @Getter
     private final StompContext context = new StompContext();
 
-    private final List<FrameInterceptorHolder> frameInterceptorHolders = new ArrayList<>();
+    private final List<FrameInterceptorHolder> interceptorHolders = new ArrayList<>();
 
     /**
      * Default constructor.
@@ -153,7 +149,7 @@ public class StompClient {
      * @param interceptor interceptor
      * @param actions frame actions this interceptor is applied to
      */
-    public void addInterceptor(final StompFrameInterceptor interceptor, final String... actions) {
+    public void addInterceptor(final StompInterceptor interceptor, final String... actions) {
         this.addInterceptor(interceptor, true, null, actions);
     }
 
@@ -165,8 +161,8 @@ public class StompClient {
      * @param actions frame actions this interceptor is applied to
      */
     public void addInterceptorBefore(
-            final StompFrameInterceptor interceptor,
-            final Class<? extends StompFrameInterceptor> interceptorClass,
+            final StompInterceptor interceptor,
+            final Class<? extends StompInterceptor> interceptorClass,
             final String... actions
     ) {
         this.addInterceptor(interceptor, true, interceptorClass, actions);
@@ -180,8 +176,8 @@ public class StompClient {
      * @param actions frame actions this interceptor is applied to
      */
     public void addInterceptorAfter(
-            final StompFrameInterceptor interceptor,
-            final Class<? extends StompFrameInterceptor> interceptorClass,
+            final StompInterceptor interceptor,
+            final Class<? extends StompInterceptor> interceptorClass,
             final String... actions
     ) {
         this.addInterceptor(interceptor, false, interceptorClass, actions);
@@ -192,8 +188,8 @@ public class StompClient {
      *
      * @param interceptor interceptor
      */
-    public void removeIntercetor(final StompFrameInterceptor interceptor) {
-        final Iterator<FrameInterceptorHolder> iterator = frameInterceptorHolders.iterator();
+    public void removeIntercetor(final StompInterceptor interceptor) {
+        final Iterator<FrameInterceptorHolder> iterator = interceptorHolders.iterator();
         while (iterator.hasNext()) {
             if (Objects.equals(iterator.next().getInterceptor(), interceptor)) {
                 iterator.remove();
@@ -206,8 +202,8 @@ public class StompClient {
      *
      * @param interceptorClass interceptor class
      */
-    public void removeIntercetor(final Class<? extends StompFrameInterceptor> interceptorClass) {
-        final Iterator<FrameInterceptorHolder> iterator = frameInterceptorHolders.iterator();
+    public void removeIntercetor(final Class<? extends StompInterceptor> interceptorClass) {
+        final Iterator<FrameInterceptorHolder> iterator = interceptorHolders.iterator();
         while (iterator.hasNext()) {
             if (interceptorClass.isAssignableFrom(iterator.next().getClass())) {
                 iterator.remove();
@@ -357,10 +353,7 @@ public class StompClient {
      * @throws IOException if an I/O error occurs
      */
     public CompletableFuture<Boolean> ack(final StompUrl url, final StompFrame frame) throws IOException {
-        final AckFrame ackFrame = this.context.createFrame(AckFrame.class);
-        ackFrame.setId(frame.getHeader(StompHeader.ACK));
-
-        return ack(url, ackFrame);
+        return ack(url, new AckFrame(frame));
     }
 
     /**
@@ -387,10 +380,7 @@ public class StompClient {
             final StompUrl url,
             final StompFrame frame
     ) throws IOException {
-        final NackFrame nackFrame = this.context.createFrame(NackFrame.class);
-        nackFrame.setId(frame.getHeader(StompHeader.ACK));
-
-        return nack(url, nackFrame);
+        return nack(url, new NackFrame(frame));
     }
 
     /**
@@ -405,7 +395,6 @@ public class StompClient {
             final StompUrl url,
             final NackFrame nackFrame
     ) throws IOException {
-
         return this.transmitFrameAwaitingReceipt(url, nackFrame);
     }
 
@@ -418,36 +407,36 @@ public class StompClient {
      * @param actions frame actions this interceptor is applied to
      */
     private void addInterceptor(
-            final StompFrameInterceptor interceptor,
+            final StompInterceptor interceptor,
             final boolean before,
-            final Class<? extends StompFrameInterceptor> interceptorClass,
+            final Class<? extends StompInterceptor> interceptorClass,
             final String... actions
     ) {
         final FrameInterceptorHolder interceptorHolder = new FrameInterceptorHolder(
                 interceptor,
                 Arrays.asList(actions)
         );
-        if (!frameInterceptorHolders.isEmpty() && interceptorClass != null) {
+        if (!interceptorHolders.isEmpty() && interceptorClass != null) {
             if (before) {
-                for (int index = 0; index < frameInterceptorHolders.size(); index++) {
-                    if (interceptorClass.isAssignableFrom(frameInterceptorHolders.get(index).getClass())) {
-                        frameInterceptorHolders.add(index, interceptorHolder);
+                for (int index = 0; index < interceptorHolders.size(); index++) {
+                    if (interceptorClass.isAssignableFrom(interceptorHolders.get(index).getClass())) {
+                        interceptorHolders.add(index, interceptorHolder);
                         return;
                     }
                 }
             } else {
-                for (int index = frameInterceptorHolders.size() - 1; index >= 0; index--) {
-                    if (interceptorClass.isAssignableFrom(frameInterceptorHolders.get(index).getClass())) {
-                        frameInterceptorHolders.add(index, interceptorHolder);
+                for (int index = interceptorHolders.size() - 1; index >= 0; index--) {
+                    if (interceptorClass.isAssignableFrom(interceptorHolders.get(index).getClass())) {
+                        interceptorHolders.add(index, interceptorHolder);
                         return;
                     }
                 }
             }
         }
-        if (before && !this.frameInterceptorHolders.isEmpty()) {
-            this.frameInterceptorHolders.add(0, interceptorHolder);
+        if (before && !this.interceptorHolders.isEmpty()) {
+            this.interceptorHolders.add(0, interceptorHolder);
         } else {
-            this.frameInterceptorHolders.add(interceptorHolder);
+            this.interceptorHolders.add(interceptorHolder);
         }
     }
 
@@ -611,9 +600,8 @@ public class StompClient {
      */
     private StompFrame applyFrameInterceptors(final StompUrl url, final StompFrame frame) throws Exception {
         StompFrame result = frame;
-        if (!frameInterceptorHolders.isEmpty()) {
-
-            for (final FrameInterceptorHolder interceptorHolder : frameInterceptorHolders) {
+        if (!interceptorHolders.isEmpty()) {
+            for (final FrameInterceptorHolder interceptorHolder : interceptorHolders) {
                 if (result == null) {
                     return null;
                 }
@@ -627,6 +615,16 @@ public class StompClient {
             }
         }
         return result;
+    }
+
+    /**
+     * Create a new named thread factory for this client.
+     *
+     * @param name name
+     * @return thread factory
+     */
+    private ThreadFactory createThreadFactory(final String name) {
+        return new NamedDaemonThreadFactory(String.format("StompClient %s %s", COUNTER.get(), name));
     }
 
     /**
@@ -784,7 +782,7 @@ public class StompClient {
                 if (success) {
                     try {
                         StompClient.this.ack(
-                                connectionHolder.getBase(), frame
+                                subscriptionHolder.getUrl(), frame
                         ).get(context.getTimeout(), TimeUnit.MILLISECONDS);
                     } catch (final Exception ex) {
                         if (log.isErrorEnabled()) {
@@ -794,7 +792,7 @@ public class StompClient {
                 } else {
                     try {
                         StompClient.this.nack(
-                                connectionHolder.getBase(), frame
+                                subscriptionHolder.getUrl(), frame
                         ).get(context.getTimeout(), TimeUnit.MILLISECONDS);
                     } catch (final Exception ex) {
                         if (log.isErrorEnabled()) {
@@ -810,8 +808,9 @@ public class StompClient {
      * SubscriptionHolder holder.
      */
     @Data
-    @AllArgsConstructor(access = AccessLevel.PRIVATE)
+    @AllArgsConstructor
     private static class SubscriptionHolder {
+
         @NonNull
         private final StompUrl url;
 
@@ -886,37 +885,11 @@ public class StompClient {
     private static class FrameInterceptorHolder {
 
         @NonNull
-        private final StompFrameInterceptor interceptor;
+        private final StompInterceptor interceptor;
 
         @NonNull
         private final List<String> actions;
 
-    }
-
-    /**
-     * Thread factory for named threads.
-     */
-    private static class NamedGroupThreadFactory implements ThreadFactory {
-
-        private final AtomicInteger threads = new AtomicInteger();
-        private final String name;
-
-        /**
-         * Default cosntructor.
-         *
-         * @param name thread family name.
-         */
-        NamedGroupThreadFactory(@NonNull final String name) {
-            this.name = name;
-        }
-
-        @Override
-        public Thread newThread(final Runnable runnable) {
-            return new Thread(
-                    runnable,
-                    String.format("StompClient %s %s %s", COUNTER.get(), name, threads.incrementAndGet())
-            );
-        }
     }
 
 }

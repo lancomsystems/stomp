@@ -15,7 +15,7 @@ public final class EnumUtil {
     }
 
     /**
-     * Find value by value.
+     * Find enum instance by value.
      *
      * @param enumClass enum class
      * @param value value

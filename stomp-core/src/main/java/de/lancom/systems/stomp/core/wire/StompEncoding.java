@@ -1,8 +1,7 @@
 package de.lancom.systems.stomp.core.wire;
 
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
-import java.util.regex.Pattern;
 
 /**
  * Utility class for stomp value encoding.
@@ -26,13 +25,13 @@ public final class StompEncoding {
      */
     public static final byte TERMINATOR = 0;
 
-    private static final Map<String, String> HEADER_ESCAPINGS = new HashMap<>();
+    private static final Map<String, String> MAPPING = new LinkedHashMap<>();
 
     static {
-        HEADER_ESCAPINGS.put("\\", "\\\\");
-        HEADER_ESCAPINGS.put("\n", "\\n");
-        HEADER_ESCAPINGS.put("\r", "\\r");
-        HEADER_ESCAPINGS.put(";", "\\c");
+        MAPPING.put("\\", "\\\\");
+        MAPPING.put("\n", "\\n");
+        MAPPING.put("\r", "\\r");
+        MAPPING.put(":", "\\c");
     }
 
     /**
@@ -50,8 +49,8 @@ public final class StompEncoding {
      */
     public static String encodeHeaderValue(final String value) {
         String result = value;
-        for (final Map.Entry<String, String> escaping : HEADER_ESCAPINGS.entrySet()) {
-            result = value.replaceAll(Pattern.quote(escaping.getKey()), escaping.getValue());
+        for (final Map.Entry<String, String> mapping : MAPPING.entrySet()) {
+            result = result.replace(mapping.getKey(), mapping.getValue());
         }
         return result;
     }
@@ -64,8 +63,8 @@ public final class StompEncoding {
      */
     public static String decodeHeaderValue(final String value) {
         String result = value;
-        for (final Map.Entry<String, String> escaping : HEADER_ESCAPINGS.entrySet()) {
-            result = value.replaceAll(Pattern.quote(escaping.getValue()), escaping.getKey());
+        for (final Map.Entry<String, String> mapping : MAPPING.entrySet()) {
+            result = result.replace(mapping.getValue(), mapping.getKey());
         }
         return result;
     }

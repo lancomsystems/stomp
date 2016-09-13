@@ -13,4 +13,5 @@ public interface EnumValue<T> {
      * @return value
      */
     T value();
+
 }
