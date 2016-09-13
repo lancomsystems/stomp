@@ -26,6 +26,8 @@ import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 @RunWith(SpringJUnit4ClassRunner.class)
 public class ProducerTest {
 
+    private static final int WAIT_SECONDS = 5;
+
     private static final String URL = "${embedded.broker.url}/topic/ff550add-01ca-4181-97dc-6c64457cdf57";
 
     @Autowired
@@ -56,7 +58,7 @@ public class ProducerTest {
 
         producer1.send(sendFrame);
 
-        assertThat(holder.get(1, 2, TimeUnit.SECONDS), is("Test1"));
+        assertThat(holder.get(1, WAIT_SECONDS, TimeUnit.SECONDS), is("Test1"));
 
     }
 
@@ -73,7 +75,7 @@ public class ProducerTest {
 
         producer1.send(sendFrame);
 
-        assertThat(holder.get(1, 2, TimeUnit.SECONDS), is(nullValue()));
+        assertThat(holder.get(1, WAIT_SECONDS, TimeUnit.SECONDS), is(nullValue()));
 
     }
 
@@ -86,7 +88,7 @@ public class ProducerTest {
 
         producer2.send("Test2");
 
-        assertThat(holder.get(1, 2, TimeUnit.SECONDS), is("Test2"));
+        assertThat(holder.get(1, WAIT_SECONDS, TimeUnit.SECONDS), is("Test2"));
 
     }
 
@@ -99,7 +101,7 @@ public class ProducerTest {
 
         producer3.send("Test3".getBytes(StandardCharsets.UTF_8));
 
-        assertThat(holder.get(1, 2, TimeUnit.SECONDS), is("Test3"));
+        assertThat(holder.get(1, WAIT_SECONDS, TimeUnit.SECONDS), is("Test3"));
 
     }
 

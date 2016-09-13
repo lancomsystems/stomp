@@ -138,8 +138,9 @@ public final class AsyncHolder<T> {
      * @param count count
      * @param timeout timeout value
      * @param unit timout unit
+     * @return number of expected values reached
      */
-    public synchronized void expect(final int count, final int timeout, final TimeUnit unit) {
+    public synchronized boolean expect(final int count, final int timeout, final TimeUnit unit) {
         try {
             final long start = System.currentTimeMillis();
             while (count > values.size()) {
@@ -150,8 +151,9 @@ public final class AsyncHolder<T> {
                     break;
                 }
             }
+            return values.size() >= count;
         } catch (final InterruptedException ex) {
-            return;
+            return false;
         }
     }
 

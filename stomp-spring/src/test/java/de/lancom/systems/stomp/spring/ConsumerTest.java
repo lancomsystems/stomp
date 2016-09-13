@@ -2,6 +2,7 @@ package de.lancom.systems.stomp.spring;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 
 import java.util.concurrent.TimeUnit;
 
@@ -27,6 +28,8 @@ import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 @ContextConfiguration(classes = ConsumerTest.class)
 @RunWith(SpringJUnit4ClassRunner.class)
 public class ConsumerTest {
+
+    private static final int WAIT_SECONDS = 5;
 
     private static final String URL_TOPIC = "${embedded.broker.url}/topic/b0d6bdcc-a30e-4667-a92f-5481ab6fa9bd";
     private static final String URL_QUEUE_ACK = "${embedded.broker.url}/queue/4e6ca3b9-8ddd-477a-8300-21409ea9b082";
@@ -83,19 +86,18 @@ public class ConsumerTest {
         sendFrame2.setHeader("flag", "b");
         client.send(url, sendFrame2).get();
 
-        TOPIC_HOLDER_GENERAL.expect(2, 2, TimeUnit.SECONDS);
-        TOPIC_HOLDER_A.expect(1, 2, TimeUnit.SECONDS);
-        TOPIC_HOLDER_B.expect(1, 2, TimeUnit.SECONDS);
-
-        assertThat(TOPIC_HOLDER_GENERAL.getCount(), is(2));
-        assertThat(TOPIC_HOLDER_GENERAL.contains("Flag A"), is(true));
-        assertThat(TOPIC_HOLDER_GENERAL.contains("Flag B"), is(true));
-
+        assertTrue(TOPIC_HOLDER_A.expect(1, WAIT_SECONDS, TimeUnit.SECONDS));
         assertThat(TOPIC_HOLDER_A.getCount(), is(1));
         assertThat(TOPIC_HOLDER_A.contains("Flag A"), is(true));
 
+        assertTrue(TOPIC_HOLDER_B.expect(1, WAIT_SECONDS, TimeUnit.SECONDS));
         assertThat(TOPIC_HOLDER_B.getCount(), is(1));
         assertThat(TOPIC_HOLDER_B.contains("Flag B"), is(true));
+
+        assertTrue(TOPIC_HOLDER_GENERAL.expect(2, WAIT_SECONDS, TimeUnit.SECONDS));
+        assertThat(TOPIC_HOLDER_GENERAL.getCount(), is(2));
+        assertThat(TOPIC_HOLDER_GENERAL.contains("Flag A"), is(true));
+        assertThat(TOPIC_HOLDER_GENERAL.contains("Flag B"), is(true));
 
     }
 
@@ -107,9 +109,9 @@ public class ConsumerTest {
         client.addInterceptor(StompInterceptors.forBodyAsString(url,QUEUE_HOLDER_ACK::set), "ACK");
         client.send(url, new SendFrame(url.getDestination(), "Body")).get();
 
-        QUEUE_HOLDER_ACK.expect(1, 2, TimeUnit.SECONDS);
-
+        assertTrue(QUEUE_HOLDER_ACK.expect(1, WAIT_SECONDS, TimeUnit.SECONDS));
         assertThat(QUEUE_HOLDER_ACK.getCount(), is(1));
+
     }
 
     @Test
@@ -120,9 +122,9 @@ public class ConsumerTest {
         client.addInterceptor(StompInterceptors.forBodyAsString(url, QUEUE_HOLDER_NACK::set), "NACK");
         client.send(url, new SendFrame(url.getDestination(), "Body")).get();
 
-        QUEUE_HOLDER_NACK.expect(1, 2, TimeUnit.SECONDS);
-
+        assertTrue(QUEUE_HOLDER_NACK.expect(1, WAIT_SECONDS, TimeUnit.SECONDS));
         assertThat(QUEUE_HOLDER_NACK.getCount(), is(1));
+
     }
 
 }
