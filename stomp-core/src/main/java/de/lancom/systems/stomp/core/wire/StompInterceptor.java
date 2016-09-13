@@ -3,7 +3,7 @@ package de.lancom.systems.stomp.core.wire;
 /**
  * Interface for intercepting of {@link StompFrame} instances.
  */
-public interface StompFrameInterceptor {
+public interface StompInterceptor {
     /**
      * Intercept the given frame.
      *

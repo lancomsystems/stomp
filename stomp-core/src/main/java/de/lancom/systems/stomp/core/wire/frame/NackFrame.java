@@ -1,6 +1,7 @@
 package de.lancom.systems.stomp.core.wire.frame;
 
 import de.lancom.systems.stomp.core.wire.StompAction;
+import de.lancom.systems.stomp.core.wire.StompFrame;
 import de.lancom.systems.stomp.core.wire.StompHeader;
 
 /**
@@ -9,10 +10,29 @@ import de.lancom.systems.stomp.core.wire.StompHeader;
 public class NackFrame extends ClientFrame {
 
     /**
-     * Default constructor.
+     * Create empty nack frame.
      */
     public NackFrame() {
         super(StompAction.NACK.value());
+    }
+
+    /**
+     * Create nack frame with given id.
+     *
+     * @param id id
+     */
+    public NackFrame(final String id) {
+        this();
+        this.setId(id);
+    }
+
+    /**
+     * Create nack frame with id of the given frame.
+     *
+     * @param frame frame
+     */
+    public NackFrame(final StompFrame frame) {
+        this(frame.getHeader(StompHeader.ACK));
     }
 
     /**
