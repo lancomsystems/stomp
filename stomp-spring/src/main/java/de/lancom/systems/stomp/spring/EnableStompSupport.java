@@ -14,6 +14,6 @@ import org.springframework.context.annotation.Import;
 @Documented
 @Target(ElementType.TYPE)
 @Retention(RetentionPolicy.RUNTIME)
-@Import(StompConfiguration.class)
-public @interface EnableStomp {
+@Import(StompSupportConfiguration.class)
+public @interface EnableStompSupport {
 }

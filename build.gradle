@@ -1,5 +1,5 @@
 group 'de.lancom.systems.stomp'
-version '0.0.1'
+version '0.1.0'
 
 
 
@@ -126,6 +126,22 @@ subprojects {
         toolVersion = '7.1'
         sourceSets = [sourceSets.main]
         configFile = file("${rootProject.projectDir}/checkstyle.xml")
+    }
+
+    afterEvaluate {
+        tasks.withType(org.gradle.api.plugins.quality.Pmd) {
+            reports {
+                xml.enabled = false
+                html.enabled = true
+            }
+        }
+
+        tasks.withType(org.gradle.api.plugins.quality.FindBugs) {
+            reports {
+                xml.enabled = false
+                html.enabled = true
+            }
+        }
     }
 
 }

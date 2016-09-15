@@ -10,6 +10,7 @@ import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.Objects;
 
+import de.lancom.systems.stomp.core.StompContext;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
@@ -42,11 +43,10 @@ public class StompDeserializer {
      * @return frame or null if none is available
      * @throws IOException if an I/O error occurs
      */
-    public StompFrame readFrame() throws IOException {
-
+    public synchronized StompFrame readFrame() throws IOException {
         StompFrame frame = null;
 
-        while (frame == null && buffer.position() + channel.read(buffer) > 0) {
+        while (frame == null && channel.isOpen() && buffer.position() + channel.read(buffer) > 0) {
             // read action
             while (true) {
                 final String line = reader.readLine();

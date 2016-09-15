@@ -11,7 +11,7 @@ import de.lancom.systems.stomp.core.wire.StompHeader;
 public abstract class ClientFrame extends StompFrame {
 
     /**
-     * Default constructor.
+     * Create a new client frame.
      *
      * @param action action name
      */

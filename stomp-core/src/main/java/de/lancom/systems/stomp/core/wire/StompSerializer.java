@@ -6,13 +6,13 @@ import java.nio.channels.WritableByteChannel;
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
 import java.util.Objects;
-import java.util.concurrent.locks.ReentrantLock;
+
+import de.lancom.systems.stomp.core.StompContext;
 
 /**
  * Output stream for stomp {@link StompFrame}.
  */
 public class StompSerializer {
-    private final ReentrantLock lock = new ReentrantLock();
     private final StompContext context;
     private final WritableByteChannel channel;
     private final ByteBuffer buffer = ByteBuffer.allocate(4096);
@@ -34,41 +34,38 @@ public class StompSerializer {
      * @param frame frame
      * @throws IOException if an I/O error occurs
      */
-    public void writeFrame(final StompFrame frame) throws IOException {
-        try {
-            lock.lock();
-
-            buffer.clear();
-            if (frame != null) {
-                if (frame.getBody() != null) {
-                    frame.setContentLength(frame.getBody().length);
-                }
-
-                buffer.put(frame.getAction().getBytes(StandardCharsets.UTF_8));
-                buffer.put(StompEncoding.LINE_FEED);
-                for (final Map.Entry<String, String> header : frame.getHeaders().entrySet()) {
-                    buffer.put(header.getKey().getBytes(StandardCharsets.UTF_8));
-                    buffer.put(StompEncoding.HEADER_SEPARATOR);
-                    if (Objects.equals(frame.getAction(), StompAction.CONNECT.value())) {
-                        buffer.put(header.getValue().getBytes(StandardCharsets.UTF_8));
-                    } else {
-                        buffer.put(
-                                StompEncoding.encodeHeaderValue(header.getValue()).getBytes(StandardCharsets.UTF_8)
-                        );
-                    }
-                    buffer.put(StompEncoding.LINE_FEED);
-                }
-                buffer.put(StompEncoding.LINE_FEED);
-                if (frame.getBody() != null) {
-                    buffer.put(frame.getBody());
-                }
-                buffer.put(StompEncoding.TERMINATOR);
-                buffer.flip();
-
-                channel.write(buffer);
+    public synchronized void writeFrame(final StompFrame frame) throws IOException {
+        buffer.clear();
+        if (frame != null) {
+            if (frame.getBody() != null) {
+                frame.setContentLength(frame.getBody().length);
             }
-        } finally {
-            lock.unlock();
+
+            buffer.put(frame.getAction().getBytes(StandardCharsets.UTF_8));
+            buffer.put(StompEncoding.LINE_FEED);
+            for (final Map.Entry<String, String> header : frame.getHeaders().entrySet()) {
+                buffer.put(header.getKey().getBytes(StandardCharsets.UTF_8));
+                buffer.put(StompEncoding.HEADER_SEPARATOR);
+                if (Objects.equals(frame.getAction(), StompAction.CONNECT.value())) {
+                    buffer.put(header.getValue().getBytes(StandardCharsets.UTF_8));
+                } else {
+                    buffer.put(
+                            StompEncoding.encodeHeaderValue(header.getValue()).getBytes(StandardCharsets.UTF_8)
+                    );
+                }
+                buffer.put(StompEncoding.LINE_FEED);
+            }
+            buffer.put(StompEncoding.LINE_FEED);
+            if (frame.getBody() != null) {
+                buffer.put(frame.getBody());
+            }
+            buffer.put(StompEncoding.TERMINATOR);
+            buffer.flip();
+
+            final int count = channel.write(buffer);
+            if (count == 0) {
+                throw new IOException();
+            }
         }
     }
 

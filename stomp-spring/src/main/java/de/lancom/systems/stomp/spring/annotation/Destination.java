@@ -1,4 +1,4 @@
-package de.lancom.systems.stomp.spring;
+package de.lancom.systems.stomp.spring.annotation;
 
 import java.lang.annotation.Documented;
 import java.lang.annotation.ElementType;
@@ -12,7 +12,7 @@ import java.lang.annotation.Target;
 @Documented
 @Target(ElementType.FIELD)
 @Retention(RetentionPolicy.RUNTIME)
-public @interface StompDestination {
+public @interface Destination {
 
     /**
      * Destination url.

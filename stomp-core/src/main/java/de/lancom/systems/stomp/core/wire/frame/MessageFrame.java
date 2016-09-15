@@ -9,7 +9,7 @@ import de.lancom.systems.stomp.core.wire.StompHeader;
 public class MessageFrame extends ServerFrame {
 
     /**
-     * Default constructor.
+     * Create a new message frame.
      */
     public MessageFrame() {
         super(StompAction.MESSAGE);

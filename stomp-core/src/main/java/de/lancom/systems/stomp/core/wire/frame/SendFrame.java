@@ -9,14 +9,14 @@ import de.lancom.systems.stomp.core.wire.StompHeader;
 public class SendFrame extends ClientFrame {
 
     /**
-     * Create empty send frame.
+     * Create a new send frame.
      */
     public SendFrame() {
         super(StompAction.SEND.value());
     }
 
     /**
-     * Create send frame with destination.
+     * Create a new send frame with destination.
      *
      * @param destination destination
      */
@@ -26,7 +26,7 @@ public class SendFrame extends ClientFrame {
     }
 
     /**
-     * Create send frame with destination and body.
+     * Create a new send frame with destination and body.
      *
      * @param destination destination
      * @param body body
@@ -37,7 +37,7 @@ public class SendFrame extends ClientFrame {
     }
 
     /**
-     * Create send frame with destination and body.
+     * Create a new send frame with destination and body.
      *
      * @param destination destination
      * @param body body

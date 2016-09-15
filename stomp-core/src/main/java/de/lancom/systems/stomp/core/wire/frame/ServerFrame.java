@@ -9,7 +9,7 @@ import de.lancom.systems.stomp.core.wire.StompFrame;
 public abstract class ServerFrame extends StompFrame {
 
     /**
-     * Constructor for action name.
+     * Create a new server frame.
      *
      * @param action action
      */

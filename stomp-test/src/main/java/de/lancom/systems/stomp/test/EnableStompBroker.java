@@ -14,6 +14,6 @@ import org.springframework.context.annotation.Import;
 @Documented
 @Target(ElementType.TYPE)
 @Retention(RetentionPolicy.RUNTIME)
-@Import(EmbeddedStompBrokerConfiguration.class)
-public @interface EnableEmbeddedStompBroker {
+@Import(StompBrokerConfiguration.class)
+public @interface EnableStompBroker {
 }

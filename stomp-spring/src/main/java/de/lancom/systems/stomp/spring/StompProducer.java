@@ -1,6 +1,7 @@
 package de.lancom.systems.stomp.spring;
 
-import java.util.concurrent.CompletableFuture;
+import de.lancom.systems.stomp.core.connection.StompFrameContext;
+import de.lancom.systems.stomp.core.promise.Promise;
 
 /**
  * Stomp producer interface.
@@ -15,6 +16,6 @@ public interface StompProducer<T> {
      * @param value value
      * @return stomp exchange
      */
-    CompletableFuture<Void> send(T value);
+    Promise<StompFrameContext> send(T value);
 
 }
