@@ -1,5 +1,8 @@
 group 'de.lancom.systems.stomp'
-version '0.0.1'
+version '0.1.0'
+
+
+
 
 subprojects {
     group rootProject.group
@@ -12,15 +15,20 @@ subprojects {
     apply plugin: 'maven'
     apply plugin: 'signing'
 
+    def conf = ext
+
+    conf['publish.url'] = rootProject.findProperty("publishUrl") ?: 'sonatype'
+    conf['publish.user'] = rootProject.findProperty("publishUser")
+    conf['publish.password'] = rootProject.findProperty("publishPassword")
+    conf['signing.password'] = rootProject.findProperty("signingPassword")
+    if (conf['signing.password'] != null) {
+        conf['signing.keyId'] = '72819AEA'
+        conf['signing.secretKeyRingFile'] = rootProject.file('signing.pgp')
+    }
+
+
     sourceCompatibility = 1.8
     targetCompatibility = 1.8
-
-    ext['signing.keyId'] = project.findProperty("signingKeyId")
-    ext['signing.secretKeyRingFile'] = project.findProperty("signingKeyRingFile")
-    ext['signing.password'] = project.findProperty("signingPassword")
-    ext['publish.url'] = project.findProperty("publishUrl")
-    ext['publish.user'] = project.findProperty("publishUser")
-    ext['publish.password'] = project.findProperty("publishPassword")
 
     repositories {
         mavenCentral()
@@ -42,47 +50,59 @@ subprojects {
     }
 
     signing {
-        if (ext.has('publish.url')) {
-            sign configurations.archives
-        }
+        required { gradle.taskGraph.hasTask("uploadArchives") }
+        sign configurations.archives
     }
 
     uploadArchives {
         repositories {
-            if (ext.has('publish.url')) {
-                mavenDeployer {
+            mavenDeployer {
+                if (conf['publish.url'] == 'sonatype') {
                     beforeDeployment { MavenDeployment deployment -> signing.signPom(deployment) }
 
-                    repository(url: ext['publish.url']) {
-                        if (ext.has('publish.user') && ext.has('publish.password')) {
-                            authentication(userName: ext['publish.user'], password: ext['publish.password'])
+                    repository(url: 'https://oss.sonatype.org/service/local/staging/deploy/maven2') {
+                        if (conf['publish.user'] != null && conf['publish.password'] != null) {
+                            authentication(userName: conf['publish.user'], password: conf['publish.password'])
                         }
                     }
-                    pom.project {
-                        name 'Stomp Library'
 
-                        packaging 'jar'
-                        description 'A Stomp client library'
-
-                        scm {
-                            connection 'scm:git:https://github.com/lancomsystems/stomp.git'
-                            developerConnection 'scm:git:https://github.com/lancomsystems/stomp.git'
-                            url 'https://github.com/lancomsystems/stomp/'
+                    snapshotRepository(url: 'https://oss.sonatype.org/content/repositories/snapshots') {
+                        if (conf['publish.user'] != null && conf['publish.password'] != null) {
+                            authentication(userName: conf['publish.user'], password: conf['publish.password'])
                         }
-
-                        licenses {
-                            license {
-                                name 'The Apache License, Version 2.0'
-                                url 'http://www.apache.org/licenses/LICENSE-2.0.txt'
-                            }
+                    }
+                } else {
+                    repository(url: conf['publish.url']) {
+                        if (conf['publish.user'] != null && conf['publish.password'] != null) {
+                            authentication(userName: conf['publish.user'], password: conf['publish.password'])
                         }
+                    }
+                }
 
-                        developers {
-                            developer {
-                                id 'frederic_kneier'
-                                name 'Frederic Kneier'
-                                email 'Frederic@Kneier.net'
-                            }
+                pom.project {
+                    name 'Stomp Library'
+
+                    packaging 'jar'
+                    description 'A Stomp client library'
+
+                    scm {
+                        connection 'scm:git:https://github.com/lancomsystems/stomp.git'
+                        developerConnection 'scm:git:https://github.com/lancomsystems/stomp.git'
+                        url 'https://github.com/lancomsystems/stomp/'
+                    }
+
+                    licenses {
+                        license {
+                            name 'The Apache License, Version 2.0'
+                            url 'http://www.apache.org/licenses/LICENSE-2.0.txt'
+                        }
+                    }
+
+                    developers {
+                        developer {
+                            id 'frederic_kneier'
+                            name 'Frederic Kneier'
+                            email 'Frederic@Kneier.net'
                         }
                     }
                 }
@@ -106,6 +126,22 @@ subprojects {
         toolVersion = '7.1'
         sourceSets = [sourceSets.main]
         configFile = file("${rootProject.projectDir}/checkstyle.xml")
+    }
+
+    afterEvaluate {
+        tasks.withType(org.gradle.api.plugins.quality.Pmd) {
+            reports {
+                xml.enabled = false
+                html.enabled = true
+            }
+        }
+
+        tasks.withType(org.gradle.api.plugins.quality.FindBugs) {
+            reports {
+                xml.enabled = false
+                html.enabled = true
+            }
+        }
     }
 
 }

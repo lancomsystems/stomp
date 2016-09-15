@@ -1,5 +1,7 @@
 package de.lancom.systems.stomp.core.wire.frame;
 
+import de.lancom.systems.stomp.core.util.EnumUtil;
+import de.lancom.systems.stomp.core.wire.StompAckMode;
 import de.lancom.systems.stomp.core.wire.StompAction;
 import de.lancom.systems.stomp.core.wire.StompHeader;
 
@@ -9,10 +11,31 @@ import de.lancom.systems.stomp.core.wire.StompHeader;
 public class SubscribeFrame extends ClientFrame {
 
     /**
-     * Default constructor.
+     * Create a new subscribe frame.
      */
     public SubscribeFrame() {
         super(StompAction.SUBSCRIBE.value());
+    }
+
+    /**
+     * Create a new subscribe frame with given id.
+     *
+     * @param id id
+     */
+    public SubscribeFrame(final String id) {
+        this();
+        this.setId(id);
+    }
+
+    /**
+     * Create a new subscribe frame with given id and destination.
+     *
+     * @param id id
+     * @param destination destination
+     */
+    public SubscribeFrame(final String id, final String destination) {
+        this(id);
+        this.setDestination(destination);
     }
 
     /**
@@ -52,21 +75,39 @@ public class SubscribeFrame extends ClientFrame {
     }
 
     /**
-     * Get acknowledge id.
+     * Get acknowledge mode.
      *
-     * @return acknowledge id
+     * @return acknowledge mode
      */
     public String getAck() {
         return this.getHeaders().get(StompHeader.ACK.value());
     }
 
     /**
-     * Set acknowledge id.
+     * Set acknowledge mode.
      *
-     * @param ack acknowledge id
+     * @param ack acknowledge mode
      */
     public void setAck(final String ack) {
         this.getHeaders().put(StompHeader.ACK.value(), ack);
+    }
+
+    /**
+     * Get acknowledge mode.
+     *
+     * @return acknowledge mode
+     */
+    public StompAckMode getAckMode() {
+        return EnumUtil.findByValue(StompAckMode.class, this.getHeaders().get(StompHeader.ACK.value()));
+    }
+
+    /**
+     * Set acknowledge mode.
+     *
+     * @param ack acknowledge mode
+     */
+    public void setAckMode(final StompAckMode ack) {
+        this.getHeaders().put(StompHeader.ACK.value(), ack.value());
     }
 
     /**

@@ -8,31 +8,33 @@ import static org.junit.Assert.assertThat;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
-import de.lancom.systems.stomp.core.StompClient;
-import de.lancom.systems.stomp.core.wire.frame.SubscribeFrame;
+import de.lancom.systems.stomp.core.StompContext;
+import de.lancom.systems.stomp.core.client.StompClient;
+import de.lancom.systems.stomp.core.client.StompUrl;
+import de.lancom.systems.stomp.core.connection.StompFrameContextInterceptors;
+import de.lancom.systems.stomp.core.connection.StompSubscription;
 import de.lancom.systems.stomp.test.AsyncHolder;
-import de.lancom.systems.stomp.test.EmbeddedStompBroker;
-import lombok.extern.slf4j.Slf4j;
+import de.lancom.systems.stomp.test.StompBroker;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
 public class StompClientTest {
 
-    protected static final EmbeddedStompBroker BROKER = new EmbeddedStompBroker();
-    protected static final StompClient CLIENT = new StompClient();
+    protected static final StompBroker BROKER = new StompBroker();
+    protected static final StompContext CONTEXT = new StompContext();
+    protected static final StompClient CLIENT = new StompClient(CONTEXT);
     protected static final int HOLDER_TIMEOUT_SECONDS = 2;
 
     @BeforeClass
     public static void startBroker() throws Exception {
         BROKER.start();
-        CLIENT.addInterceptor(new LoggingFrameInterceptor());
-        CLIENT.start();
+        CONTEXT.start();
     }
 
     @AfterClass
     public static void stopBroker() throws Exception {
-        CLIENT.stop();
+        CONTEXT.stop();
         BROKER.stop();
     }
 
@@ -50,16 +52,20 @@ public class StompClientTest {
 
         final AsyncHolder<String> holder = AsyncHolder.create();
 
-        this.CLIENT.subscribe(url, subscriptionId, (u, f) -> {
-            holder.set(f.getBodyAsString());
-            return true;
-        }).get();
+        try {
+            CLIENT.createSubscription(url, subscriptionId, c -> {
+                holder.set(c.getFrame().getBodyAsString());
+                return true;
+            }).subscribe().await();
 
-        this.CLIENT.send(url, message).get();
+            CLIENT.send(url, message).await();
 
-        final String result = holder.get(HOLDER_TIMEOUT_SECONDS, TimeUnit.SECONDS);
-        assertThat(result, is(notNullValue()));
-        assertThat(result, is(equalTo(message)));
+            final String result = holder.get(HOLDER_TIMEOUT_SECONDS, TimeUnit.SECONDS);
+            assertThat(result, is(notNullValue()));
+            assertThat(result, is(equalTo(message)));
+        } finally {
+            CLIENT.removeSubscription(url, subscriptionId);
+        }
     }
 
     @Test
@@ -72,30 +78,32 @@ public class StompClientTest {
         final AsyncHolder<String> holder1 = AsyncHolder.create();
         final AsyncHolder<String> holder2 = AsyncHolder.create();
 
-        this.CLIENT.subscribe(url, subscriptionId1, (u, f) -> {
-            holder1.set(f.getBodyAsString());
-            return true;
-        }).get();
+        try {
+            CLIENT.createSubscription(url, subscriptionId1, c -> {
+                holder1.set(c.getFrame().getBodyAsString());
+                return true;
+            }).subscribe().await();
 
-        this.CLIENT.subscribe(url, subscriptionId2, (u, f) -> {
-            holder2.set(f.getBodyAsString());
-            return true;
-        }).get();
+            CLIENT.createSubscription(url, subscriptionId2, c -> {
+                holder2.set(c.getFrame().getBodyAsString());
+                return true;
+            }).subscribe().await();
 
-        this.CLIENT.send(url, message).get();
+            CLIENT.send(url, message).await();
 
-        final String result1 = holder1.get(HOLDER_TIMEOUT_SECONDS, TimeUnit.SECONDS);
-        assertThat(result1, is(equalTo(message)));
+            final String result1 = holder1.get(HOLDER_TIMEOUT_SECONDS, TimeUnit.SECONDS);
+            assertThat(result1, is(equalTo(message)));
 
-        final String result2 = holder2.get(HOLDER_TIMEOUT_SECONDS, TimeUnit.SECONDS);
-        assertThat(result2, is(equalTo(message)));
+            final String result2 = holder2.get(HOLDER_TIMEOUT_SECONDS, TimeUnit.SECONDS);
+            assertThat(result2, is(equalTo(message)));
+        } finally {
+            CLIENT.removeSubscription(url, subscriptionId1);
+            CLIENT.removeSubscription(url, subscriptionId2);
+        }
     }
 
     @Test
     public void acknowledged() throws Exception {
-
-        final StompClient CLIENT = new StompClient();
-        StompClientTest.CLIENT.start();
 
         final StompUrl url = createStompUrl("/queue/%s", UUID.randomUUID());
         final String subscriptionId = UUID.randomUUID().toString();
@@ -104,85 +112,69 @@ public class StompClientTest {
         try {
             final AsyncHolder<Boolean> holder = AsyncHolder.create();
 
-            this.CLIENT.addInterceptor((u, f) -> {
-                holder.set(Boolean.TRUE);
-                return f;
-            }, "ACK");
+            CLIENT.addInterceptor(StompFrameContextInterceptors.builder().hasAction("ACK").match(holder::set).build());
 
-            final SubscribeFrame subscribeFrame = new SubscribeFrame();
-            subscribeFrame.setDestination(url.getDestination());
-            subscribeFrame.setId(subscriptionId);
-            subscribeFrame.setAck(StompAckMode.CLIENT_INDIVIDUAL.value());
+            final StompSubscription subscription = CLIENT.createSubscription(url, subscriptionId, c -> true);
+            subscription.getSubscribeFrame().setAckMode(StompAckMode.CLIENT_INDIVIDUAL);
+            subscription.subscribe().await();
 
-            this.CLIENT.subscribe(url, subscribeFrame, (u, f) -> true).get();
-
-            this.CLIENT.send(url, message).get();
+            CLIENT.send(url, message).get();
 
             assertThat(holder.get(HOLDER_TIMEOUT_SECONDS, TimeUnit.SECONDS), is(Boolean.TRUE));
         } finally {
-            this.CLIENT.unsubscribe(url, subscriptionId).get();
+            CLIENT.removeSubscription(url, subscriptionId);
         }
     }
 
     @Test
     public void notAcknowledgedManual() throws Exception {
 
-        final StompClient CLIENT = new StompClient();
-        StompClientTest.CLIENT.start();
-
         final StompUrl url = createStompUrl("/queue/%s", UUID.randomUUID());
         final String subscriptionId = UUID.randomUUID().toString();
         final String message = UUID.randomUUID().toString();
 
-        final AsyncHolder<Boolean> holder = AsyncHolder.create();
+        try {
+            final AsyncHolder<Boolean> holder = AsyncHolder.create();
 
-        this.CLIENT.addInterceptor((u, f) -> {
-            holder.set(Boolean.TRUE);
-            return f;
-        }, "NACK");
+            CLIENT.addInterceptor(StompFrameContextInterceptors.builder().hasAction("NACK").match(holder::set).build());
 
-        final SubscribeFrame subscribeFrame = new SubscribeFrame();
-        subscribeFrame.setDestination(url.getDestination());
-        subscribeFrame.setId(subscriptionId);
-        subscribeFrame.setAck(StompAckMode.CLIENT_INDIVIDUAL.value());
+            final StompSubscription subscription = CLIENT.createSubscription(url, subscriptionId, c -> false);
+            subscription.getSubscribeFrame().setAckMode(StompAckMode.CLIENT_INDIVIDUAL);
+            subscription.subscribe().await();
 
-        this.CLIENT.subscribe(url, subscribeFrame, (u, f) -> false);
+            CLIENT.send(url, message);
 
-        this.CLIENT.send(url, message);
-
-        assertThat(holder.get(HOLDER_TIMEOUT_SECONDS, TimeUnit.SECONDS), is(Boolean.TRUE));
-
+            assertThat(holder.get(HOLDER_TIMEOUT_SECONDS, TimeUnit.SECONDS), is(Boolean.TRUE));
+        } finally {
+            CLIENT.removeSubscription(url, subscriptionId);
+        }
     }
 
     @Test
     public void notAcknowledgedException() throws Exception {
 
-        final StompClient CLIENT = new StompClient();
-        StompClientTest.CLIENT.start();
 
         final StompUrl url = createStompUrl("/queue/%s", UUID.randomUUID());
         final String subscriptionId = UUID.randomUUID().toString();
         final String message = UUID.randomUUID().toString();
 
-        final AsyncHolder<Boolean> holder = AsyncHolder.create();
+        try {
+            final AsyncHolder<Boolean> holder = AsyncHolder.create();
 
-        this.CLIENT.addInterceptor((u, f) -> {
-            holder.set(Boolean.TRUE);
-            return f;
-        }, "NACK");
+            CLIENT.addInterceptor(StompFrameContextInterceptors.builder().hasAction("NACK").match(holder::set).build());
 
-        final SubscribeFrame subscribeFrame = new SubscribeFrame();
-        subscribeFrame.setDestination(url.getDestination());
-        subscribeFrame.setId(subscriptionId);
-        subscribeFrame.setAck(StompAckMode.CLIENT_INDIVIDUAL.value());
+            final StompSubscription subscription = CLIENT.createSubscription(url, subscriptionId, c -> {
+                throw new Exception("Failed");
+            });
+            subscription.getSubscribeFrame().setAckMode(StompAckMode.CLIENT_INDIVIDUAL);
+            subscription.subscribe().await();
 
-        this.CLIENT.subscribe(url, subscribeFrame, (u, f) -> {
-            throw new Exception("failed");
-        }).get();
+            CLIENT.send(url, message);
 
-        this.CLIENT.send(url, message).get();
-
-        assertThat(holder.get(HOLDER_TIMEOUT_SECONDS, TimeUnit.SECONDS), is(Boolean.TRUE));
+            assertThat(holder.get(HOLDER_TIMEOUT_SECONDS, TimeUnit.SECONDS), is(Boolean.TRUE));
+        } finally {
+            CLIENT.removeSubscription(url, subscriptionId);
+        }
 
     }
 
@@ -190,14 +182,4 @@ public class StompClientTest {
         return StompUrl.parse("stomp://localhost:" + BROKER.getPort() + String.format(path, parameters));
     }
 
-    @Slf4j
-    private static class LoggingFrameInterceptor implements StompInterceptor {
-
-        @Override
-        public StompFrame intercept(final StompUrl url, final StompFrame frame) throws Exception {
-            log.info(String.format("StompFrame intercepted: \n\t%s\n\t%s", frame, url));
-            return frame;
-        }
-
-    }
 }

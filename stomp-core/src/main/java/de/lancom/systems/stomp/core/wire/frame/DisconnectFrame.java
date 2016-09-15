@@ -8,7 +8,7 @@ import de.lancom.systems.stomp.core.wire.StompAction;
 public class DisconnectFrame extends ClientFrame {
 
     /**
-     * Default constructor.
+     * Create a new disconnect frame.
      */
     public DisconnectFrame() {
         super(StompAction.DISCONNECT.value());

@@ -9,10 +9,20 @@ import de.lancom.systems.stomp.core.wire.StompHeader;
 public class UnsubscribeFrame extends ClientFrame {
 
     /**
-     * Default constructor.
+     * Create a new unsubscribe frame.
      */
     public UnsubscribeFrame() {
         super(StompAction.UNSUBSCRIBE.value());
+    }
+
+    /**
+     * Create a new unsubscribe frame with given id.
+     *
+     * @param id id
+     */
+    public UnsubscribeFrame(final String id) {
+        this();
+        this.setId(id);
     }
 
     /**

@@ -1,4 +1,4 @@
-package de.lancom.systems.stomp.core.wire;
+package de.lancom.systems.stomp.core.client;
 
 import java.net.URI;
 

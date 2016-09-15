@@ -1,4 +1,4 @@
-package de.lancom.systems.stomp.spring;
+package de.lancom.systems.stomp.spring.annotation;
 
 import java.lang.annotation.Documented;
 import java.lang.annotation.ElementType;
@@ -14,7 +14,7 @@ import de.lancom.systems.stomp.core.wire.StompAckMode;
 @Documented
 @Target(ElementType.METHOD)
 @Retention(RetentionPolicy.RUNTIME)
-public @interface StompSubscription {
+public @interface Subscription {
 
     /**
      * Subscription id.

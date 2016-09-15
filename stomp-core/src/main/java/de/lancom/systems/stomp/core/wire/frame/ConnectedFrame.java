@@ -9,7 +9,7 @@ import de.lancom.systems.stomp.core.wire.StompHeader;
 public class ConnectedFrame extends ServerFrame {
 
     /**
-     * Default constructor.
+     * Create an ew connected frame.
      */
     public ConnectedFrame() {
         super(StompAction.CONNECTED.value());

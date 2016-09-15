@@ -4,3 +4,6 @@ jdk:
 branches:
   only:
     - master
+
+after_success:
+  - if [ "$TRAVIS_BRANCH" == "master" ]; then uploadArchives -PsigningPassword='${signingPassword}' -PpublishUser='${publishUser}' -PpublishPassword='${publishPassword}'
