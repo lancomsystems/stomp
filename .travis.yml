@@ -6,4 +6,4 @@ branches:
     - master
 
 after_success:
-  - test "$TRAVIS_BRANCH" == "master" && gradle uploadArchives -PsigningPassword='${signingPassword}' -PpublishUser='${publishUser}' -PpublishPassword='${publishPassword}'
+  - test "$TRAVIS_BRANCH" == "master" && ./gradlew uploadArchives -PsigningPassword='${signingPassword}' -PpublishUser='${publishUser}' -PpublishPassword='${publishPassword}'
