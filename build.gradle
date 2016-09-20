@@ -84,6 +84,7 @@ subprojects {
 
                     packaging 'jar'
                     description 'A Stomp client library'
+                    url 'https://github.com/lancomsystems/stomp'
 
                     scm {
                         connection 'scm:git:https://github.com/lancomsystems/stomp.git'
