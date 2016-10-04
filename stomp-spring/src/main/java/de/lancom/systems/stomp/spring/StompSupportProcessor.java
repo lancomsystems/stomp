@@ -336,6 +336,9 @@ public class StompSupportProcessor implements
                         return client.transmitFrame(url, sendFrame);
                     }
                 }
+                case "toString": {
+                    return String.format("Stomp Producer for '%s'", url);
+                }
                 default: {
                     throw new UnsupportedOperationException(String.format("Method %s is not implemented ", method));
                 }
