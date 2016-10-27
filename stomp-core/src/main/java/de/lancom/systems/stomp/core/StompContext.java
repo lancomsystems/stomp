@@ -12,7 +12,6 @@ import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import de.lancom.systems.stomp.core.connection.StompConnection;
@@ -233,7 +232,7 @@ public class StompContext {
         public void execute() {
             while (running.get()) {
                 try {
-                    selector.select(TimeUnit.SECONDS.toMillis(1));
+                    selector.select(500);
 
                     for (final StompConnection connection : connections) {
                         if (!connection.getTransmitJobs().isEmpty()) {
