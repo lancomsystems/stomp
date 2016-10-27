@@ -123,18 +123,19 @@ public class StompConnectionTest {
     @Test
     public void acknowledged() throws Exception {
 
+        CONNECTION.addInterceptor(StompFrameContextInterceptors.logger());
+
         final String destination = String.format("/queue/%s", UUID.randomUUID());
         final String message = randomUUID().toString();
 
-        final StompSubscription subscription = CONNECTION.createSubscription(
-                destination,
-                c -> true
-        );
+        final StompSubscription subscription = CONNECTION.createSubscription(destination, c -> true);
 
         try {
             final AsyncHolder<Boolean> holder = AsyncHolder.create();
 
-            CONNECTION.addInterceptor(StompFrameContextInterceptors.builder().hasAction("ACK").match(holder::set).build());
+            CONNECTION.addInterceptor(
+                    StompFrameContextInterceptors.builder().hasAction("ACK").match(holder::set).build()
+            );
             subscription.getSubscribeFrame().setAckMode(StompAckMode.CLIENT_INDIVIDUAL);
             assertTrue(
                     "Subscription failed",
@@ -159,7 +160,10 @@ public class StompConnectionTest {
         try {
             final AsyncHolder<Boolean> holder = AsyncHolder.create();
 
-            CONNECTION.addInterceptor(StompFrameContextInterceptors.builder().hasAction("NACK").match(holder::set).build());
+            CONNECTION.addInterceptor(StompFrameContextInterceptors.builder()
+                                              .hasAction("NACK")
+                                              .match(holder::set)
+                                              .build());
 
             final StompSubscription subscription = CONNECTION.createSubscription(
                     subscriptionId,
@@ -190,7 +194,10 @@ public class StompConnectionTest {
         try {
             final AsyncHolder<Boolean> holder = AsyncHolder.create();
 
-            CONNECTION.addInterceptor(StompFrameContextInterceptors.builder().hasAction("NACK").match(holder::set).build());
+            CONNECTION.addInterceptor(StompFrameContextInterceptors.builder()
+                                              .hasAction("NACK")
+                                              .match(holder::set)
+                                              .build());
 
             final StompSubscription subscription = CONNECTION.createSubscription(subscriptionId, destination, c -> {
                 throw new Exception("Failed");
@@ -268,7 +275,6 @@ public class StompConnectionTest {
 
         try {
 
-            CONNECTION.addInterceptor(StompFrameContextInterceptors.logger());
             assertTrue(
                     "Subscription failed",
                     subscription.subscribe().await(TIMEOUT_SECONDS, TimeUnit.SECONDS)

@@ -103,6 +103,7 @@ public class StompSubscription {
                     if (log.isDebugEnabled()) {
                         log.debug("Subscribed as {} to {} on {}", this.getId(), this.getDestination(), connection);
                     }
+                    return null;
                 }).apply(deferred);
             }
             return this.subscriptionPromise;
@@ -115,7 +116,7 @@ public class StompSubscription {
      * @return promise
      */
     public Promise<Void> unsubscribe() {
-        if (!connection.isConnected()) {
+        if (connection.getState() == StompConnection.State.AUTHORIZED) {
             this.subscriptionPromise = null;
             return stompContext.getDeferred().success();
         } else {

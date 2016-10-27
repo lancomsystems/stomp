@@ -25,6 +25,7 @@ public class StompClientTest {
     protected static final StompContext CONTEXT = new StompContext();
     protected static final StompClient CLIENT = new StompClient(CONTEXT);
     protected static final int HOLDER_TIMEOUT_SECONDS = 2;
+    protected static final int TIMEOUT_SECONDS = 2;
 
     @BeforeClass
     public static void startBroker() throws Exception {
@@ -41,11 +42,12 @@ public class StompClientTest {
     @Test
     public void sendMessage() throws Exception {
         final StompUrl url = createStompUrl("/topic/%s", UUID.randomUUID());
-        this.CLIENT.send(url, "Test").get();
+        this.CLIENT.send(url, "Test").get(TIMEOUT_SECONDS, TimeUnit.SECONDS);
     }
 
     @Test
     public void readQueue() throws Exception {
+
         final StompUrl url = createStompUrl("/queue/%s", UUID.randomUUID());
         final String subscriptionId = UUID.randomUUID().toString();
         final String message = UUID.randomUUID().toString();
@@ -56,9 +58,9 @@ public class StompClientTest {
             CLIENT.createSubscription(url, subscriptionId, c -> {
                 holder.set(c.getFrame().getBodyAsString());
                 return true;
-            }).subscribe().await();
+            }).subscribe().await(TIMEOUT_SECONDS, TimeUnit.SECONDS);
 
-            CLIENT.send(url, message).await();
+            CLIENT.send(url, message).await(TIMEOUT_SECONDS, TimeUnit.SECONDS);
 
             final String result = holder.get(HOLDER_TIMEOUT_SECONDS, TimeUnit.SECONDS);
             assertThat(result, is(notNullValue()));
@@ -82,14 +84,14 @@ public class StompClientTest {
             CLIENT.createSubscription(url, subscriptionId1, c -> {
                 holder1.set(c.getFrame().getBodyAsString());
                 return true;
-            }).subscribe().await();
+            }).subscribe().await(TIMEOUT_SECONDS, TimeUnit.SECONDS);
 
             CLIENT.createSubscription(url, subscriptionId2, c -> {
                 holder2.set(c.getFrame().getBodyAsString());
                 return true;
-            }).subscribe().await();
+            }).subscribe().await(TIMEOUT_SECONDS, TimeUnit.SECONDS);
 
-            CLIENT.send(url, message).await();
+            CLIENT.send(url, message).await(TIMEOUT_SECONDS, TimeUnit.SECONDS);
 
             final String result1 = holder1.get(HOLDER_TIMEOUT_SECONDS, TimeUnit.SECONDS);
             assertThat(result1, is(equalTo(message)));
@@ -116,9 +118,9 @@ public class StompClientTest {
 
             final StompSubscription subscription = CLIENT.createSubscription(url, subscriptionId, c -> true);
             subscription.getSubscribeFrame().setAckMode(StompAckMode.CLIENT_INDIVIDUAL);
-            subscription.subscribe().await();
+            subscription.subscribe().await(TIMEOUT_SECONDS, TimeUnit.SECONDS);
 
-            CLIENT.send(url, message).get();
+            CLIENT.send(url, message).get(TIMEOUT_SECONDS, TimeUnit.SECONDS);
 
             assertThat(holder.get(HOLDER_TIMEOUT_SECONDS, TimeUnit.SECONDS), is(Boolean.TRUE));
         } finally {
@@ -140,7 +142,7 @@ public class StompClientTest {
 
             final StompSubscription subscription = CLIENT.createSubscription(url, subscriptionId, c -> false);
             subscription.getSubscribeFrame().setAckMode(StompAckMode.CLIENT_INDIVIDUAL);
-            subscription.subscribe().await();
+            subscription.subscribe().await(TIMEOUT_SECONDS, TimeUnit.SECONDS);
 
             CLIENT.send(url, message);
 
@@ -167,7 +169,7 @@ public class StompClientTest {
                 throw new Exception("Failed");
             });
             subscription.getSubscribeFrame().setAckMode(StompAckMode.CLIENT_INDIVIDUAL);
-            subscription.subscribe().await();
+            subscription.subscribe().await(TIMEOUT_SECONDS, TimeUnit.SECONDS);
 
             CLIENT.send(url, message);
 

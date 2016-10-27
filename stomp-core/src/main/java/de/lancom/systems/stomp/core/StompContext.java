@@ -1,5 +1,7 @@
 package de.lancom.systems.stomp.core;
 
+import java.nio.channels.SelectionKey;
+import java.nio.channels.Selector;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -10,6 +12,7 @@ import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import de.lancom.systems.stomp.core.connection.StompConnection;
@@ -42,14 +45,18 @@ import lombok.extern.slf4j.Slf4j;
  */
 @Slf4j
 public class StompContext {
-
     private static final long DEFAULT_TIMEOUT = 10000;
+
+    private static final ExecutorService EXECUTOR_SERVICE = Executors.newCachedThreadPool(
+            new NamedDaemonThreadFactory("Stomp")
+    );
 
     private final Map<String, Class<? extends StompFrame>> frameClasses = new HashMap<>();
     private final List<StompConnection> connections = new CopyOnWriteArrayList<>();
     private final AtomicBoolean running = new AtomicBoolean();
 
-    private final ExecutorService executorService;
+    @Getter
+    private final Selector selector;
 
     @Getter
     private final DeferredFactory deferred;
@@ -85,23 +92,27 @@ public class StompContext {
      * Default constructor.
      */
     public StompContext() {
-        // client frames
-        this.registerFrame(StompAction.CONNECT.value(), ConnectFrame.class);
-        this.registerFrame(StompAction.DISCONNECT.value(), DisconnectFrame.class);
-        this.registerFrame(StompAction.SEND.value(), SendFrame.class);
-        this.registerFrame(StompAction.ACK.value(), AckFrame.class);
-        this.registerFrame(StompAction.NACK.value(), NackFrame.class);
 
-        // server frames
-        this.registerFrame(StompAction.CONNECTED.value(), ConnectedFrame.class);
-        this.registerFrame(StompAction.RECEIPT.value(), ReceiptFrame.class);
-        this.registerFrame(StompAction.MESSAGE.value(), MessageFrame.class);
+        try {
+            this.selector = Selector.open();
+            this.deferred = new DeferredFactory(EXECUTOR_SERVICE);
 
-        this.executorService = Executors.newCachedThreadPool(
-                new NamedDaemonThreadFactory("Stomp")
-        );
+            // register client frames
+            this.registerFrame(StompAction.CONNECT.value(), ConnectFrame.class);
+            this.registerFrame(StompAction.DISCONNECT.value(), DisconnectFrame.class);
+            this.registerFrame(StompAction.SEND.value(), SendFrame.class);
+            this.registerFrame(StompAction.ACK.value(), AckFrame.class);
+            this.registerFrame(StompAction.NACK.value(), NackFrame.class);
 
-        this.deferred = new DeferredFactory(this.executorService);
+            // register server frames
+            this.registerFrame(StompAction.CONNECTED.value(), ConnectedFrame.class);
+            this.registerFrame(StompAction.RECEIPT.value(), ReceiptFrame.class);
+            this.registerFrame(StompAction.MESSAGE.value(), MessageFrame.class);
+
+        } catch (final Exception ex) {
+            throw new RuntimeException("Failed to initialize stomp context", ex);
+        }
+
     }
 
     /**
@@ -222,17 +233,29 @@ public class StompContext {
         public void execute() {
             while (running.get()) {
                 try {
+                    selector.select(TimeUnit.SECONDS.toMillis(1));
+
                     for (final StompConnection connection : connections) {
-                        if (connection.isConnected()) {
-                            registerSubscriptions(connection);
-                            writeFrames(connection);
-                            readFrames(connection);
-                        } else {
-                            if (!connection.getTransmitJobs().isEmpty()) {
+                        if (!connection.getTransmitJobs().isEmpty()) {
+                            if (connection.getState() == StompConnection.State.DISCONNECTED) {
                                 connection.connect();
+                            } else {
+                                registerSubscriptions(connection);
+                                writeFrames(connection);
                             }
                         }
                     }
+
+                    final Iterator<SelectionKey> iterator = selector.selectedKeys().iterator();
+                    while (iterator.hasNext()) {
+                        final SelectionKey key = iterator.next();
+                        try {
+                            readFrames((StompConnection) key.attachment());
+                        } finally {
+                            iterator.remove();
+                        }
+                    }
+
                 } catch (final Exception ex) {
                     if (log.isWarnEnabled()) {
                         log.warn("Error processing stomp messages", ex);

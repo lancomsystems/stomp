@@ -5,8 +5,6 @@ import java.util.concurrent.TimeUnit;
 import de.lancom.systems.stomp.core.promise.callback.ConsumerCallback;
 import de.lancom.systems.stomp.core.promise.callback.ExecutorCallback;
 import de.lancom.systems.stomp.core.promise.callback.ProcessorCallback;
-import de.lancom.systems.stomp.core.promise.callback.PromiseProcessorCallback;
-import de.lancom.systems.stomp.core.promise.callback.PromiseSupplierCallback;
 import de.lancom.systems.stomp.core.promise.callback.SupplierCallback;
 
 /**
@@ -23,7 +21,7 @@ public interface Promise<T> {
      * @param <X> promise result type
      * @return promise
      */
-    <X> Promise<X> then(ProcessorCallback<T, X> success);
+    <X> Promise<X> then(ProcessorCallback<T, ?> success);
 
     /**
      * Append new promise using success and fail callback.
@@ -33,7 +31,7 @@ public interface Promise<T> {
      * @param <X> promise result type
      * @return promise
      */
-    <X> Promise<X> then(ProcessorCallback<T, X> success, ProcessorCallback<Exception, X> fail);
+    <X> Promise<X> then(ProcessorCallback<T, ?> success, ProcessorCallback<Exception, ?> fail);
 
     /**
      * Append new promise using success and fail callback.
@@ -43,84 +41,15 @@ public interface Promise<T> {
      * @param <X> promise result type
      * @return promise
      */
-    <X> Promise<X> then(ProcessorCallback<T, X> success, PromiseProcessorCallback<Exception, X> fail);
+    <X> Promise<X> then(ProcessorCallback<T, ?> success, SupplierCallback<?> fail);
 
     /**
-     * Append new promise using success and fail callback.
-     *
-     * @param success success callback
-     * @param fail fail callback
-     * @param <X> promise result type
-     * @return promise
-     */
-    <X> Promise<X> then(ProcessorCallback<T, X> success, PromiseSupplierCallback<X> fail);
-
-    /**
-     * Append new promise using success and fail callback.
-     *
-     * @param success success callback
-     * @param fail fail callback
-     * @param <X> promise result type
-     * @return promise
-     */
-    <X> Promise<X> then(ProcessorCallback<T, X> success, SupplierCallback<X> fail);
-
-    /**
-     * Append new promise using success callback.
-     *
-     * @param success success callback
-     * @param <X> promise result type
-     * @return promise
-     */
-    <X> Promise<X> then(PromiseProcessorCallback<T, X> success);
-
-    /**
-     * Append new promise using success and fail callback.
-     *
-     * @param success success callback
-     * @param fail fail callback
-     * @param <X> promise result type
-     * @return promise
-     */
-    <X> Promise<X> then(PromiseProcessorCallback<T, X> success, ProcessorCallback<Exception, X> fail);
-
-    /**
-     * Append new promise using success and fail callback.
-     *
-     * @param success success callback
-     * @param fail fail callback
-     * @param <X> promise result type
-     * @return promise
-     */
-    <X> Promise<X> then(PromiseProcessorCallback<T, X> success, PromiseProcessorCallback<Exception, X> fail);
-
-    /**
-     * Append new promise using success and fail callback.
-     *
-     * @param success success callback
-     * @param fail fail callback
-     * @param <X> promise result type
-     * @return promise
-     */
-    <X> Promise<X> then(PromiseProcessorCallback<T, X> success, PromiseSupplierCallback<X> fail);
-
-    /**
-     * Append new promise using success and fail callback.
-     *
-     * @param success success callback
-     * @param fail fail callback
-     * @param <X> promise result type
-     * @return promise
-     */
-    <X> Promise<X> then(PromiseProcessorCallback<T, X> success, SupplierCallback<X> fail);
-
-    /**
-     * Append new void promise using success callback.
+     * Append new void promise.
      *
      * @param success success callback
      * @return promise
      */
-    Promise<Void> then(ConsumerCallback<T> success);
+    Promise<Void> then(ExecutorCallback success);
 
     /**
      * Append new void promise.
@@ -141,17 +70,10 @@ public interface Promise<T> {
      * Append new fallback promise using value callback.
      *
      * @param callback callback
+     * @param <X> promise result type
      * @return promise
      */
-    Promise<T> fail(SupplierCallback<T> callback);
-
-    /**
-     * Append new fallback promise using value callback.
-     *
-     * @param callback callback
-     * @return promise
-     */
-    Promise<T> fail(PromiseProcessorCallback<Exception, T> callback);
+    <X> Promise<X> fail(SupplierCallback<?> callback);
 
     /**
      * Append new fallback promise using value callback.
@@ -176,16 +98,7 @@ public interface Promise<T> {
      * @param <X> promise result type
      * @return promise
      */
-    <X> Promise<X> always(SupplierCallback<X> callback);
-
-    /**
-     * Append new promise using callback for any result.
-     *
-     * @param callback callback
-     * @param <X> promise result type
-     * @return promise
-     */
-    <X> Promise<X> always(PromiseSupplierCallback<X> callback);
+    <X> Promise<X> always(SupplierCallback<?> callback);
 
     /**
      * Append new void promise using callback for any result.
@@ -268,6 +181,6 @@ public interface Promise<T> {
      * @param deferred deffered
      * @return promise
      */
-    Promise<Void> apply(Deferred<T> deferred);
+    Promise<Void> apply(Deferred<?> deferred);
 
 }
