@@ -1,5 +1,5 @@
 dependencies {
     compileOnly group: 'org.projectlombok', name: 'lombok', version: '1.16.10'
-    compile group: 'org.springframework', name: 'spring-context', version: '4.0.0.RELEASE'
+    compile group: 'org.springframework', name: 'spring-context', version: '4.3.0.RELEASE'
     compile group: 'org.apache.activemq', name: 'activemq-stomp', version: '5.14.0'
 }
