@@ -44,6 +44,7 @@ import lombok.extern.slf4j.Slf4j;
  */
 @Slf4j
 public class StompContext {
+    private static final long RECONNECT_TIMEOUT = 500;
     private static final long DEFAULT_TIMEOUT = 10000;
 
     private static final ExecutorService EXECUTOR_SERVICE = Executors.newCachedThreadPool(
@@ -232,7 +233,7 @@ public class StompContext {
         public void execute() {
             while (running.get()) {
                 try {
-                    selector.select(500);
+                    selector.select(RECONNECT_TIMEOUT);
 
                     for (final StompConnection connection : connections) {
                         if (!connection.getTransmitJobs().isEmpty()) {
