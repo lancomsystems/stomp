@@ -68,6 +68,8 @@ public class StompConnection {
     @Getter
     private SocketChannel channel;
 
+    private SelectionKey selectionKey;
+
     private final StompContext stompContext;
 
     private long reconnectLock;
@@ -127,10 +129,14 @@ public class StompConnection {
             this.readyPromise = stompContext.getDeferred().defer(
                     () -> {
                         log.debug("Connecting to {}", this);
-                        final SocketChannel createdChannel = SocketChannel.open();
-                        createdChannel.connect(new InetSocketAddress(host, port));
+                        final SocketChannel createdChannel = SocketChannel.open(new InetSocketAddress(host, port));
                         createdChannel.configureBlocking(false);
-                        createdChannel.register(this.stompContext.getSelector(), SelectionKey.OP_READ, this);
+
+                        this.selectionKey = createdChannel.register(
+                                this.stompContext.getSelector(),
+                                SelectionKey.OP_READ,
+                                this
+                        );
 
                         this.deserializer = new StompDeserializer(this.stompContext, createdChannel);
                         this.serializer = new StompSerializer(this.stompContext, createdChannel);
@@ -208,13 +214,23 @@ public class StompConnection {
     public void close() {
         try {
             if (this.getState() == State.AUTHORIZED) {
-                log.error("Lost " + this);
+                log.warn("Lost connection to" + this);
             }
             this.readyPromise = null;
             this.serializer = null;
             this.deserializer = null;
-            this.channel.close();
-            this.channel = null;
+
+            if (this.selectionKey != null) {
+                this.selectionKey.cancel();
+                this.selectionKey = null;
+            }
+
+            if (this.channel != null) {
+                if (this.channel.isConnected()) {
+                    this.channel.close();
+                }
+                this.channel = null;
+            }
 
             for (final StompSubscription subscription : subscriptions) {
                 subscription.reset();

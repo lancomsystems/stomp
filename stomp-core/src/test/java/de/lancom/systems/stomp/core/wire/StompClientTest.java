@@ -46,7 +46,7 @@ public class StompClientTest {
 
     @After
     public void teardownClient() {
-        this.client = null;
+        this.client.close();
     }
 
     private StompClient client = null;

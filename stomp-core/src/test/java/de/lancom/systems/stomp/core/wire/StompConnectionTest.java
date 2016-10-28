@@ -44,7 +44,7 @@ public class StompConnectionTest {
 
     @After
     public void teardownClient() {
-        this.connection = null;
+        this.connection.close();
     }
 
     @Test
