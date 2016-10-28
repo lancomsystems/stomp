@@ -126,6 +126,7 @@ public class StompConnection {
 
             this.readyPromise = stompContext.getDeferred().defer(
                     () -> {
+                        log.debug("Connecting to {}", this);
                         final SocketChannel createdChannel = SocketChannel.open();
                         createdChannel.connect(new InetSocketAddress(host, port));
                         createdChannel.configureBlocking(false);
@@ -139,6 +140,7 @@ public class StompConnection {
                     }
             ).then(
                     context -> {
+                        log.debug("Authorizing with {}", this);
                         final Promise<StompFrameContext> promise = this.transmitFrameAndAwait(
                                 new StompFrameContext(this.connectFrame),
                                 () -> this.state == State.AUTHORIZING,
@@ -156,7 +158,7 @@ public class StompConnection {
                     (ex) -> {
                         this.close();
                         if (log.isWarnEnabled()) {
-                            log.warn("Connection to " + this + " failed, retrying");
+                            log.warn("Connection to {} failed, retrying", this);
                         }
                     }
             );
