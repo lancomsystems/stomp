@@ -141,12 +141,12 @@ public class StompConnection {
                     }
             ).then(
                     context -> {
+                        this.setState(State.AUTHORIZING);
                         final Promise<StompFrameContext> promise = this.transmitFrameAndAwait(
                                 new StompFrameContext(this.connectFrame),
                                 () -> this.state == State.AUTHORIZING,
                                 c -> Objects.equals(StompAction.CONNECTED.value(), c.getFrame().getAction())
                         );
-                        this.setState(State.AUTHORIZING);
                         return promise;
                     }
             ).then(
@@ -540,10 +540,8 @@ public class StompConnection {
         final Deferred<StompFrameContext> result = stompContext.getDeferred().defer();
         try {
             if (handler != null) {
-                final Deferred<StompFrameContext> deferred = stompContext.getDeferred().defer();
-
                 awaitFrame(handler).apply(result);
-                this.transmitJobs.add(new StompFrameTransmitJob(context, condition, deferred));
+                this.transmitJobs.add(new StompFrameTransmitJob(context, condition, null));
             } else {
                 this.transmitJobs.add(new StompFrameTransmitJob(context, condition, result));
             }

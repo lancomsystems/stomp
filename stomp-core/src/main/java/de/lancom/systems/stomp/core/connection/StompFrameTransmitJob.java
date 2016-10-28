@@ -16,7 +16,7 @@ public class StompFrameTransmitJob {
     private final StompFrameContext context;
     @NonNull
     private final BooleanSupplier condition;
-    @NonNull
+
     private final Deferred<StompFrameContext> deferred;
 
 }

@@ -304,7 +304,9 @@ public class StompContext {
                             connection.applyInterceptors(context);
                             serializer.writeFrame(context.getFrame());
                             transmitIterator.remove();
-                            job.getDeferred().resolve(context);
+                            if (job.getDeferred() != null) {
+                                job.getDeferred().resolve(context);
+                            }
                         }
                     } catch (final Exception ex) {
                         connection.close();
