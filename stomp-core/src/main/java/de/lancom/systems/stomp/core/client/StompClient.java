@@ -287,6 +287,9 @@ public class StompClient {
         return getConnection(url, true).awaitFrame(handler);
     }
 
+    /**
+     * Close client and all connections.
+     */
     public void close() {
         for (final StompConnection connection : connectionMap.values()) {
             connection.close();
