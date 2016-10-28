@@ -103,6 +103,7 @@ public class StompSubscription {
                     if (log.isDebugEnabled()) {
                         log.debug("Subscribed as {} to {} on {}", this.getId(), this.getDestination(), connection);
                     }
+                    this.stompContext.getSelector().wakeup();
                     return null;
                 }).apply(deferred);
             }

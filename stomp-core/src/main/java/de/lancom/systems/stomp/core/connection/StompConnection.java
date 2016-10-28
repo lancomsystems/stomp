@@ -619,12 +619,12 @@ public class StompConnection {
      */
     public void setState(final State state) {
         try {
-            this.stateLock.readLock().lock();
+            this.stateLock.writeLock().lock();
             log.debug("Connection state for {} changing to {} ", this, state);
             this.state = state;
             this.stompContext.getSelector().wakeup();
         } finally {
-            this.stateLock.readLock().unlock();
+            this.stateLock.writeLock().unlock();
         }
     }
 
