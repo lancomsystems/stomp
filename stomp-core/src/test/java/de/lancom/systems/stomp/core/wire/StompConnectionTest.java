@@ -41,15 +41,14 @@ public class StompConnectionTest {
 
     @Before
     public void setupClient() {
-        this.connection = new StompConnection(CONTEXT, "localhost",BROKER.getPort());
+        this.connection = new StompConnection(CONTEXT, "localhost", BROKER.getPort());
         this.connection.addInterceptor(LOGGER);
     }
 
     @After
     public void teardownClient() {
         this.connection.removeIntercetor(LOGGER);
-        this.connection.close();
-        this.connection =null;
+        this.connection = null;
     }
 
     @Test
@@ -316,7 +315,7 @@ public class StompConnectionTest {
     }
 
     private StompConnection createConnection() {
-        final StompConnection connection = new StompConnection(CONTEXT, "localhost",BROKER.getPort());
+        final StompConnection connection = new StompConnection(CONTEXT, "localhost", BROKER.getPort());
         connection.addInterceptor(StompFrameContextInterceptors.logger());
 
         return connection;

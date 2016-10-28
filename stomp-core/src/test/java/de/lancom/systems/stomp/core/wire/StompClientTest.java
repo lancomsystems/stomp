@@ -50,8 +50,7 @@ public class StompClientTest {
     @After
     public void teardownClient() {
         this.client.removeIntercetor(LOGGER);
-        this.client.close();
-        this.client =null;
+        this.client = null;
     }
 
     private StompClient client = null;
