@@ -1,5 +1,6 @@
 package de.lancom.systems.stomp.core.wire;
 
+import static de.lancom.systems.stomp.core.wire.Constants.TIMEOUT_SECONDS;
 import static java.util.UUID.randomUUID;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
@@ -19,6 +20,7 @@ import de.lancom.systems.stomp.core.promise.Promise;
 import de.lancom.systems.stomp.test.AsyncHolder;
 import de.lancom.systems.stomp.test.StompBroker;
 import org.junit.AfterClass;
+import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
 
@@ -27,7 +29,11 @@ public class StompConnectionTest {
     protected static final StompBroker BROKER = StompBroker.run();
     protected static final StompContext CONTEXT = StompContext.run();
     protected static final StompConnection CONNECTION = new StompConnection(CONTEXT, "localhost", BROKER.getPort());
-    protected static final int TIMEOUT_SECONDS = 2;
+
+    @BeforeClass
+    public static void initLogging() {
+        CONNECTION.addInterceptor(StompFrameContextInterceptors.logger());
+    }
 
     @AfterClass
     public static void stopBroker() throws Exception {
@@ -122,8 +128,6 @@ public class StompConnectionTest {
 
     @Test
     public void acknowledged() throws Exception {
-
-        CONNECTION.addInterceptor(StompFrameContextInterceptors.logger());
 
         final String destination = String.format("/queue/%s", UUID.randomUUID());
         final String message = randomUUID().toString();
