@@ -118,10 +118,6 @@ public class StompConnection {
             this.setState(State.CONNECTING);
             this.reconnectLock = System.currentTimeMillis() + TimeUnit.SECONDS.toMillis(2);
 
-            if (log.isDebugEnabled()) {
-                log.debug("Connecting to " + this);
-            }
-
             this.readyPromise = stompContext.getDeferred().defer(
                     () -> {
                         final SocketChannel createdChannel = SocketChannel.open();
@@ -133,14 +129,11 @@ public class StompConnection {
                         this.serializer = new StompSerializer(this.stompContext, createdChannel);
                         this.channel = createdChannel;
 
-                        if (log.isDebugEnabled()) {
-                            log.debug("Connected to " + this);
-                        }
-
                         this.setState(State.CONNECTED);
                     }
             ).then(
                     context -> {
+
                         this.setState(State.AUTHORIZING);
                         final Promise<StompFrameContext> promise = this.transmitFrameAndAwait(
                                 new StompFrameContext(this.connectFrame),
@@ -150,7 +143,9 @@ public class StompConnection {
                         return promise;
                     }
             ).then(
-                    () -> this.setState(State.AUTHORIZED)
+                    () -> {
+                        this.setState(State.AUTHORIZED);
+                    }
 
             ).fail(
                     (ex) -> {
@@ -595,6 +590,7 @@ public class StompConnection {
         builder.append('(');
         builder.append("host: ").append(host);
         builder.append(", port: ").append(port);
+        builder.append(", state: ").append(state);
         if (this.getConnectFrame().getLogin() != null) {
             builder.append(", login: ").append(this.getConnectFrame().getLogin());
         }
@@ -624,6 +620,7 @@ public class StompConnection {
     public void setState(final State state) {
         try {
             this.stateLock.readLock().lock();
+            log.debug("Connection state for {} changing to {} ", this, state);
             this.state = state;
             this.stompContext.getSelector().wakeup();
         } finally {
