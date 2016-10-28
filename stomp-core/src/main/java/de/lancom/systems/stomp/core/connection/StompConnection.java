@@ -12,6 +12,8 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.ReadWriteLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.function.BooleanSupplier;
 
 import de.lancom.systems.stomp.core.StompContext;
@@ -38,13 +40,12 @@ public class StompConnection {
 
     private final List<StompSubscription> subscriptions = new CopyOnWriteArrayList<>();
     private final List<StompFrameContextInterceptor> interceptors = new CopyOnWriteArrayList<>();
-
+    private final ReadWriteLock stateLock = new ReentrantReadWriteLock();
+    private State state = State.DISCONNECTED;
     @Getter
     private final Queue<StompFrameTransmitJob> transmitJobs = new ConcurrentLinkedQueue<>();
     @Getter
     private final Queue<StompFrameAwaitJob> awaitJobs = new ConcurrentLinkedQueue<>();
-    @Getter
-    private State state = State.DISCONNECTED;
     @Getter
     private final String host;
     @Getter
@@ -110,11 +111,11 @@ public class StompConnection {
      */
     public Promise<Void> connect() {
         boolean connect = true;
-        connect = connect && state == State.DISCONNECTED;
         connect = connect && System.currentTimeMillis() > this.reconnectLock;
+        connect = connect && this.getState() == State.DISCONNECTED;
 
         if (connect) {
-            this.updateState(State.CONNECTING);
+            this.setState(State.CONNECTING);
             this.reconnectLock = System.currentTimeMillis() + TimeUnit.SECONDS.toMillis(2);
 
             if (log.isDebugEnabled()) {
@@ -136,7 +137,7 @@ public class StompConnection {
                             log.debug("Connected to " + this);
                         }
 
-                        this.updateState(State.CONNECTED);
+                        this.setState(State.CONNECTED);
                     }
             ).then(
                     context -> {
@@ -145,11 +146,11 @@ public class StompConnection {
                                 () -> this.state == State.AUTHORIZING,
                                 c -> Objects.equals(StompAction.CONNECTED.value(), c.getFrame().getAction())
                         );
-                        this.updateState(State.AUTHORIZING);
+                        this.setState(State.AUTHORIZING);
                         return promise;
                     }
             ).then(
-                    () -> this.updateState(State.AUTHORIZED)
+                    () -> this.setState(State.AUTHORIZED)
 
             ).fail(
                     (ex) -> {
@@ -221,7 +222,7 @@ public class StompConnection {
                 log.error("Could not close " + this);
             }
         } finally {
-            this.updateState(State.DISCONNECTED);
+            this.setState(State.DISCONNECTED);
         }
     }
 
@@ -421,7 +422,6 @@ public class StompConnection {
         }
     }
 
-
     /**
      * Send the given body to the given destination.
      *
@@ -605,13 +605,32 @@ public class StompConnection {
     }
 
     /**
-     * Update state and notify selector.
+     * Get current state.
      *
-     * @param update new state
+     * @return state
      */
-    private void updateState(final State update) {
-        this.state = update;
-        this.stompContext.getSelector().wakeup();
+    public State getState() {
+        try {
+            this.stateLock.readLock().lock();
+            return state;
+        } finally {
+            this.stateLock.readLock().unlock();
+        }
+    }
+
+    /**
+     * Update current state.
+     *
+     * @param state state
+     */
+    public void setState(final State state) {
+        try {
+            this.stateLock.readLock().lock();
+            this.state = state;
+            this.stompContext.getSelector().wakeup();
+        } finally {
+            this.stateLock.readLock().unlock();
+        }
     }
 
     /**

@@ -26,6 +26,7 @@ import de.lancom.systems.stomp.core.util.NamedDaemonThreadFactory;
 import de.lancom.systems.stomp.core.wire.StompAction;
 import de.lancom.systems.stomp.core.wire.StompFrame;
 import de.lancom.systems.stomp.core.wire.StompHeader;
+import de.lancom.systems.stomp.core.wire.StompSerializer;
 import de.lancom.systems.stomp.core.wire.StompVersion;
 import de.lancom.systems.stomp.core.wire.frame.AckFrame;
 import de.lancom.systems.stomp.core.wire.frame.ConnectFrame;
@@ -291,7 +292,9 @@ public class StompContext {
          * @param connection connection
          */
         private void writeFrames(final StompConnection connection) {
-            if (connection.getSerializer() != null) {
+            final StompSerializer serializer = connection.getSerializer();
+
+            if (serializer != null) {
                 final Iterator<StompFrameTransmitJob> transmitIterator = connection.getTransmitJobs().iterator();
                 while (transmitIterator.hasNext()) {
                     final StompFrameTransmitJob job = transmitIterator.next();
@@ -299,7 +302,7 @@ public class StompContext {
                     try {
                         if (job.getCondition().getAsBoolean()) {
                             connection.applyInterceptors(context);
-                            connection.getSerializer().writeFrame(context.getFrame());
+                            serializer.writeFrame(context.getFrame());
                             transmitIterator.remove();
                             job.getDeferred().resolve(context);
                         }
