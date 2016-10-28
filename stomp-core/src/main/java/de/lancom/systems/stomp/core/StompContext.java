@@ -1,6 +1,5 @@
 package de.lancom.systems.stomp.core;
 
-import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -237,26 +236,16 @@ public class StompContext {
                     selector.select(RECONNECT_TIMEOUT);
 
                     for (final StompConnection connection : connections) {
-                        if (!connection.getTransmitJobs().isEmpty()) {
-                            if (connection.getState() == StompConnection.State.DISCONNECTED) {
+                        if (connection.getState() == StompConnection.State.DISCONNECTED) {
+                            if (!connection.getTransmitJobs().isEmpty()) {
                                 connection.connect();
-                            } else {
-                                registerSubscriptions(connection);
-                                writeFrames(connection);
                             }
+                        } else {
+                            registerSubscriptions(connection);
+                            writeFrames(connection);
+                            readFrames(connection);
                         }
                     }
-
-                    final Iterator<SelectionKey> iterator = selector.selectedKeys().iterator();
-                    while (iterator.hasNext()) {
-                        final SelectionKey key = iterator.next();
-                        try {
-                            readFrames((StompConnection) key.attachment());
-                        } finally {
-                            iterator.remove();
-                        }
-                    }
-
                 } catch (final Exception ex) {
                     if (log.isWarnEnabled()) {
                         log.warn("Error processing stomp messages", ex);
