@@ -304,7 +304,7 @@ public class StompContext {
                             job.getDeferred().resolve(context);
                         }
                     } catch (final Exception ex) {
-                        connection.closeConnection();
+                        connection.close();
                         if (log.isErrorEnabled()) {
                             log.error(String.format(
                                     "Failed to write %s to %s, retrying",
@@ -399,7 +399,7 @@ public class StompContext {
                         }
                     }
                 } catch (final Exception ex) {
-                    connection.closeConnection();
+                    connection.close();
                     if (log.isErrorEnabled()) {
                         log.error(String.format(
                                 "Failed to read frame from %s",

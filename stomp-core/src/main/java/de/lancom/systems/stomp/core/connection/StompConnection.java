@@ -5,7 +5,6 @@ import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
 import java.util.Queue;
@@ -154,7 +153,7 @@ public class StompConnection {
 
             ).fail(
                     (ex) -> {
-                        this.closeConnection();
+                        this.close();
                         if (log.isWarnEnabled()) {
                             log.warn("Connection to " + this + " failed, retrying");
                         }
@@ -187,7 +186,7 @@ public class StompConnection {
             promise = promise.always(() -> this.transmitFrame(disconnectFrame).always());
 
             promise = promise.always(() -> {
-                this.closeConnection();
+                this.close();
 
                 if (log.isDebugEnabled()) {
                     log.debug("Disconnected  from" + this);
@@ -203,7 +202,7 @@ public class StompConnection {
     /**
      * Close connection.
      */
-    public void closeConnection() {
+    public void close() {
         try {
             if (this.getState() == State.AUTHORIZED) {
                 log.error("Lost " + this);
@@ -397,32 +396,31 @@ public class StompConnection {
     }
 
     /**
-     * Remove interceptor instance from frame interceptor queue.
+     * Remove interceptorDelegator instance from frame interceptorDelegator queue.
      *
-     * @param interceptor interceptor
+     * @param target target
      */
-    public void removeIntercetor(final StompFrameContextHandler interceptor) {
-        final Iterator<StompFrameContextInterceptor> iterator = interceptors.iterator();
-        while (iterator.hasNext()) {
-            if (Objects.equals(iterator.next(), interceptor)) {
-                iterator.remove();
+    public void removeIntercetor(final StompFrameContextInterceptor target) {
+        for (final StompFrameContextInterceptor interceptor : interceptors) {
+            if (Objects.equals(interceptor, target)) {
+                interceptors.remove(interceptor);
             }
         }
     }
 
     /**
-     * Remove interceptor of given type from frame interceptor queue.
+     * Remove interceptorDelegator of given type from frame interceptorDelegator queue.
      *
-     * @param interceptorClass interceptor class
+     * @param interceptorClass interceptorDelegator class
      */
-    public void removeIntercetor(final Class<? extends StompFrameContextHandler> interceptorClass) {
-        final Iterator<StompFrameContextInterceptor> iterator = interceptors.iterator();
-        while (iterator.hasNext()) {
-            if (interceptorClass.isAssignableFrom(iterator.next().getClass())) {
-                iterator.remove();
+    public void removeIntercetor(final Class<? extends StompFrameContextInterceptor> interceptorClass) {
+        for (final StompFrameContextInterceptor interceptor : interceptors) {
+            if (interceptorClass.isAssignableFrom(interceptor.getClass())) {
+                interceptors.remove(interceptor);
             }
         }
     }
+
 
     /**
      * Send the given body to the given destination.

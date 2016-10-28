@@ -55,16 +55,13 @@ subprojects {
 
     test {
         beforeTest { descriptor ->
-            testOutput.add("\nSTART ${descriptor}\n\n")
-        }
-        afterTest {            descriptor ->
-            testOutput.add("\nEND ${descriptor}\n\n")
+            testOutput.clear()
         }
         onOutput { descriptor, event ->
             testOutput.add("\t${event.message}")
         }
-        afterSuite { descriptor, result ->
-            if(descriptor.parent != null && result.resultType.name() == 'FAILURE') {
+        afterTest { descriptor, result ->
+            if (descriptor.parent != null && result.resultType.name() == 'FAILURE') {
                 println "\nOutput of ${descriptor}:\n"
                 testOutput.each {
                     print("${it}")

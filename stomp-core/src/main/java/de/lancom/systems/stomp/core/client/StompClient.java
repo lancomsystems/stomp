@@ -2,7 +2,6 @@ package de.lancom.systems.stomp.core.client;
 
 import java.io.IOException;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -251,13 +250,12 @@ public class StompClient {
     /**
      * Remove interceptorDelegator instance from frame interceptorDelegator queue.
      *
-     * @param interceptor interceptorDelegator
+     * @param target target
      */
-    public void removeIntercetor(final StompFrameContextHandler interceptor) {
-        final Iterator<StompFrameContextInterceptor> iterator = interceptors.iterator();
-        while (iterator.hasNext()) {
-            if (Objects.equals(iterator.next(), interceptor)) {
-                iterator.remove();
+    public void removeIntercetor(final StompFrameContextInterceptor target) {
+        for (final StompFrameContextInterceptor interceptor : interceptors) {
+            if (Objects.equals(interceptor, target)) {
+                interceptors.remove(interceptor);
             }
         }
     }
@@ -267,11 +265,10 @@ public class StompClient {
      *
      * @param interceptorClass interceptorDelegator class
      */
-    public void removeIntercetor(final Class<? extends StompFrameContextHandler> interceptorClass) {
-        final Iterator<StompFrameContextInterceptor> iterator = interceptors.iterator();
-        while (iterator.hasNext()) {
-            if (interceptorClass.isAssignableFrom(iterator.next().getClass())) {
-                iterator.remove();
+    public void removeIntercetor(final Class<? extends StompFrameContextInterceptor> interceptorClass) {
+        for (final StompFrameContextInterceptor interceptor : interceptors) {
+            if (interceptorClass.isAssignableFrom(interceptor.getClass())) {
+                interceptors.remove(interceptor);
             }
         }
     }
@@ -290,4 +287,9 @@ public class StompClient {
         return getConnection(url, true).awaitFrame(handler);
     }
 
+    public void close() {
+        for (final StompConnection connection : connectionMap.values()) {
+            connection.close();
+        }
+    }
 }
