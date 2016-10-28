@@ -414,6 +414,14 @@ public class DeferredFactory {
             }
         }
 
+        @Override
+        public Promise<Void> fail(final Deferred<?> target) {
+            return this.createPromise(null, (e) -> {
+                target.reject(e);
+                return null;
+            });
+        }
+
         /**
          * Create promise using callbacks.
          *

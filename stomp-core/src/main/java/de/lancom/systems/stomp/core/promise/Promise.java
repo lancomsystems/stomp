@@ -183,4 +183,12 @@ public interface Promise<T> {
      */
     Promise<Void> apply(Deferred<?> deferred);
 
+    /**
+     * Apply failure to a given {@link Deferred}.
+     *
+     * @param deferred deffered
+     * @return promise
+     */
+    Promise<Void> fail(Deferred<?> deferred);
+
 }

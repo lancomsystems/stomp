@@ -14,7 +14,6 @@ import java.util.concurrent.TimeUnit;
 import de.lancom.systems.stomp.core.StompContext;
 import de.lancom.systems.stomp.core.connection.StompConnection;
 import de.lancom.systems.stomp.core.connection.StompFrameContext;
-import de.lancom.systems.stomp.core.connection.StompFrameContextInterceptor;
 import de.lancom.systems.stomp.core.connection.StompFrameContextInterceptors;
 import de.lancom.systems.stomp.core.connection.StompSubscription;
 import de.lancom.systems.stomp.core.promise.Promise;
@@ -30,7 +29,6 @@ public class StompConnectionTest {
 
     protected static final StompBroker BROKER = StompBroker.run();
     protected static final StompContext CONTEXT = StompContext.run();
-    protected static final StompFrameContextInterceptor LOGGER = StompFrameContextInterceptors.logger();
     private StompConnection connection;
 
     @AfterClass
@@ -42,12 +40,10 @@ public class StompConnectionTest {
     @Before
     public void setupClient() {
         this.connection = new StompConnection(CONTEXT, "localhost", BROKER.getPort());
-        this.connection.addInterceptor(LOGGER);
     }
 
     @After
     public void teardownClient() {
-        this.connection.removeIntercetor(LOGGER);
         this.connection = null;
     }
 

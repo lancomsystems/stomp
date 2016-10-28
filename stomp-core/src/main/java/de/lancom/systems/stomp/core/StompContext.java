@@ -11,6 +11,7 @@ import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import de.lancom.systems.stomp.core.connection.StompConnection;
@@ -292,6 +293,9 @@ public class StompContext {
                         if (job.getCondition().getAsBoolean()) {
                             connection.applyInterceptors(context);
                             serializer.writeFrame(context.getFrame());
+
+                            log.debug("Sent frame to {} {\n\t{}\n}", connection, context.getFrame());
+
                             transmitIterator.remove();
                             if (job.getDeferred() != null) {
                                 job.getDeferred().resolve(context);
@@ -322,9 +326,7 @@ public class StompContext {
                     while (true) {
                         StompFrame frame = connection.getDeserializer().readFrame();
                         if (frame != null) {
-                            if (log.isDebugEnabled()) {
-                                log.debug("Got " + frame);
-                            }
+                            log.debug("Got frame for {} {\n\t{}\n}", connection, frame);
 
                             final StompFrameContext context = new StompFrameContext(frame);
                             connection.applyInterceptors(context);
@@ -400,6 +402,25 @@ public class StompContext {
                                 connection.toString()
                         ), ex);
                     }
+                }
+            }
+        }
+
+        /**
+         * Reject invalid await jobs.
+         *
+         * @param connection connection
+         */
+        private void rejectInvalidAwaitJobs(final StompConnection connection) {
+            final Iterator<StompFrameAwaitJob> awaitIterator = connection.getAwaitJobs().iterator();
+            while (awaitIterator.hasNext()) {
+                final StompFrameAwaitJob job = awaitIterator.next();
+                if (job.getValidUntil() < System.currentTimeMillis()) {
+                    awaitIterator.remove();
+                    if (log.isDebugEnabled()) {
+                        log.debug("Rejected wait job for " + connection);
+                    }
+                    job.getDeferred().reject(new TimeoutException());
                 }
             }
         }

@@ -13,4 +13,6 @@ public class StompFrameAwaitJob {
     private final StompFrameContextHandler handler;
     @NonNull
     private final Deferred<StompFrameContext> deferred;
+    @NonNull
+    private final Long validUntil;
 }

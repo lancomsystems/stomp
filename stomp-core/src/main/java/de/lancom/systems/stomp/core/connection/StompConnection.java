@@ -12,6 +12,7 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.function.BooleanSupplier;
@@ -38,6 +39,8 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class StompConnection {
 
+    private static final AtomicInteger COUNTER = new AtomicInteger();
+
     private final List<StompSubscription> subscriptions = new CopyOnWriteArrayList<>();
     private final List<StompFrameContextInterceptor> interceptors = new CopyOnWriteArrayList<>();
     private final ReadWriteLock stateLock = new ReentrantReadWriteLock();
@@ -46,6 +49,8 @@ public class StompConnection {
     private final Queue<StompFrameTransmitJob> transmitJobs = new ConcurrentLinkedQueue<>();
     @Getter
     private final Queue<StompFrameAwaitJob> awaitJobs = new ConcurrentLinkedQueue<>();
+    @Getter
+    private final int id;
     @Getter
     private final String host;
     @Getter
@@ -86,6 +91,7 @@ public class StompConnection {
      * @param port port
      */
     public StompConnection(final StompContext stompContext, final String host, final int port) {
+        this.id = COUNTER.incrementAndGet();
         this.stompContext = stompContext;
         this.stompContext.addConnection(this);
         this.host = host;
@@ -133,13 +139,12 @@ public class StompConnection {
                     }
             ).then(
                     context -> {
-
-                        this.setState(State.AUTHORIZING);
                         final Promise<StompFrameContext> promise = this.transmitFrameAndAwait(
                                 new StompFrameContext(this.connectFrame),
                                 () -> this.state == State.AUTHORIZING,
                                 c -> Objects.equals(StompAction.CONNECTED.value(), c.getFrame().getAction())
                         );
+                        this.setState(State.AUTHORIZING);
                         return promise;
                     }
             ).then(
@@ -238,17 +243,23 @@ public class StompConnection {
     /**
      * Create a new subscription for the given destination using the given id and the given handler.
      *
-     * @param id id
+     * @param subscriptionId id
      * @param destination destination
      * @param handler handler
      * @return subscription
      */
     public StompSubscription createSubscription(
-            @NonNull final String id,
+            @NonNull final String subscriptionId,
             @NonNull final String destination,
             @NonNull final StompFrameContextHandler handler
     ) {
-        final StompSubscription subscription = new StompSubscription(stompContext, this, id, destination, handler);
+        final StompSubscription subscription = new StompSubscription(
+                stompContext,
+                this,
+                subscriptionId,
+                destination,
+                handler
+        );
         this.subscriptions.add(subscription);
         this.stompContext.getSelector().wakeup();
         return subscription;
@@ -287,14 +298,14 @@ public class StompConnection {
     /**
      * Get subscription with the given id.
      *
-     * @param id id
+     * @param subscriptionId id
      * @return subscription
      */
     public StompSubscription getSubscription(
-            @NonNull final String id
+            @NonNull final String subscriptionId
     ) {
         for (final StompSubscription subscription : this.subscriptions) {
-            if (Objects.equals(id, subscription.getId())) {
+            if (Objects.equals(subscriptionId, subscription.getId())) {
                 return subscription;
             }
         }
@@ -304,14 +315,14 @@ public class StompConnection {
     /**
      * Remove subscription with the given id.
      *
-     * @param id id
+     * @param subscriptionId id
      * @return removed subscription
      */
     public StompSubscription removeSubscription(
-            @NonNull final String id
+            @NonNull final String subscriptionId
     ) {
         for (final StompSubscription subscription : this.subscriptions) {
-            if (Objects.equals(id, subscription.getId())) {
+            if (Objects.equals(subscriptionId, subscription.getId())) {
                 subscription.unsubscribe();
                 this.subscriptions.remove(subscription);
                 return subscription;
@@ -536,7 +547,11 @@ public class StompConnection {
         try {
             if (handler != null) {
                 awaitFrame(handler).apply(result);
-                this.transmitJobs.add(new StompFrameTransmitJob(context, condition, null));
+
+                final Deferred<StompFrameContext> transmit = stompContext.getDeferred().defer();
+                transmit.getPromise().fail(result);
+
+                this.transmitJobs.add(new StompFrameTransmitJob(context, condition, transmit));
             } else {
                 this.transmitJobs.add(new StompFrameTransmitJob(context, condition, result));
             }
@@ -557,9 +572,29 @@ public class StompConnection {
     public Promise<StompFrameContext> awaitFrame(
             @NonNull final StompFrameContextHandler handler
     ) {
+        return this.awaitFrame(handler, null);
+    }
+
+    /**
+     * Await frame.
+     *
+     * @param handler frame handler
+     * @param timeout timeout
+     * @return promise
+     */
+    public Promise<StompFrameContext> awaitFrame(
+            @NonNull final StompFrameContextHandler handler,
+            final Long timeout
+    ) {
         final Deferred<StompFrameContext> deferred = stompContext.getDeferred().defer();
         try {
-            this.awaitJobs.add(new StompFrameAwaitJob(handler, deferred));
+            final Long validUntil;
+            if (timeout != null) {
+                validUntil = System.currentTimeMillis() + timeout;
+            } else {
+                validUntil = System.currentTimeMillis() + this.stompContext.getTimeout();
+            }
+            this.awaitJobs.add(new StompFrameAwaitJob(handler, deferred, validUntil));
         } catch (final Exception ex) {
             deferred.reject(ex);
         }
@@ -588,7 +623,8 @@ public class StompConnection {
         final StringBuilder builder = new StringBuilder();
         builder.append(this.getClass().getSimpleName());
         builder.append('(');
-        builder.append("host: ").append(host);
+        builder.append("id: ").append(id);
+        builder.append(", host: ").append(host);
         builder.append(", port: ").append(port);
         builder.append(", state: ").append(state);
         if (this.getConnectFrame().getLogin() != null) {
