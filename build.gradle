@@ -1,5 +1,5 @@
 group 'de.lancom.systems.stomp'
-version '0.1.1'
+version '0.1.2'
 
 subprojects {
     group rootProject.group
@@ -49,6 +49,25 @@ subprojects {
     signing {
         required { gradle.taskGraph.hasTask("uploadArchives") }
         sign configurations.archives
+    }
+
+    def testOutput = []
+
+    test {
+        beforeTest { descriptor ->
+            testOutput.clear()
+        }
+        onOutput { descriptor, event ->
+            testOutput.add("\t${event.message}")
+        }
+        afterTest { descriptor, result ->
+            if (descriptor.parent != null && result.resultType.name() == 'FAILURE') {
+                println "\nOutput of ${descriptor}:\n"
+                testOutput.each {
+                    print("${it}")
+                }
+            }
+        }
     }
 
     uploadArchives {

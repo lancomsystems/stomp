@@ -1,5 +1,7 @@
 package de.lancom.systems.stomp.core;
 
+import java.nio.channels.SelectionKey;
+import java.nio.channels.Selector;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -10,6 +12,8 @@ import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import de.lancom.systems.stomp.core.connection.StompConnection;
@@ -24,6 +28,7 @@ import de.lancom.systems.stomp.core.util.NamedDaemonThreadFactory;
 import de.lancom.systems.stomp.core.wire.StompAction;
 import de.lancom.systems.stomp.core.wire.StompFrame;
 import de.lancom.systems.stomp.core.wire.StompHeader;
+import de.lancom.systems.stomp.core.wire.StompSerializer;
 import de.lancom.systems.stomp.core.wire.StompVersion;
 import de.lancom.systems.stomp.core.wire.frame.AckFrame;
 import de.lancom.systems.stomp.core.wire.frame.ConnectFrame;
@@ -42,14 +47,18 @@ import lombok.extern.slf4j.Slf4j;
  */
 @Slf4j
 public class StompContext {
-
+    private static final long RECONNECT_TIMEOUT = 1000;
     private static final long DEFAULT_TIMEOUT = 10000;
+
+    private static final ThreadFactory THREAD_FACTORY = new NamedDaemonThreadFactory("Stomp");
+    private static final ExecutorService EXECUTOR_SERVICE = Executors.newCachedThreadPool(THREAD_FACTORY);
 
     private final Map<String, Class<? extends StompFrame>> frameClasses = new HashMap<>();
     private final List<StompConnection> connections = new CopyOnWriteArrayList<>();
     private final AtomicBoolean running = new AtomicBoolean();
 
-    private final ExecutorService executorService;
+    @Getter
+    private final Selector selector;
 
     @Getter
     private final DeferredFactory deferred;
@@ -85,23 +94,27 @@ public class StompContext {
      * Default constructor.
      */
     public StompContext() {
-        // client frames
-        this.registerFrame(StompAction.CONNECT.value(), ConnectFrame.class);
-        this.registerFrame(StompAction.DISCONNECT.value(), DisconnectFrame.class);
-        this.registerFrame(StompAction.SEND.value(), SendFrame.class);
-        this.registerFrame(StompAction.ACK.value(), AckFrame.class);
-        this.registerFrame(StompAction.NACK.value(), NackFrame.class);
 
-        // server frames
-        this.registerFrame(StompAction.CONNECTED.value(), ConnectedFrame.class);
-        this.registerFrame(StompAction.RECEIPT.value(), ReceiptFrame.class);
-        this.registerFrame(StompAction.MESSAGE.value(), MessageFrame.class);
+        try {
+            this.selector = Selector.open();
+            this.deferred = new DeferredFactory(EXECUTOR_SERVICE);
 
-        this.executorService = Executors.newCachedThreadPool(
-                new NamedDaemonThreadFactory("Stomp")
-        );
+            // register client frames
+            this.registerFrame(StompAction.CONNECT.value(), ConnectFrame.class);
+            this.registerFrame(StompAction.DISCONNECT.value(), DisconnectFrame.class);
+            this.registerFrame(StompAction.SEND.value(), SendFrame.class);
+            this.registerFrame(StompAction.ACK.value(), AckFrame.class);
+            this.registerFrame(StompAction.NACK.value(), NackFrame.class);
 
-        this.deferred = new DeferredFactory(this.executorService);
+            // register server frames
+            this.registerFrame(StompAction.CONNECTED.value(), ConnectedFrame.class);
+            this.registerFrame(StompAction.RECEIPT.value(), ReceiptFrame.class);
+            this.registerFrame(StompAction.MESSAGE.value(), MessageFrame.class);
+
+        } catch (final Exception ex) {
+            throw new RuntimeException("Failed to initialize stomp context", ex);
+        }
+
     }
 
     /**
@@ -222,15 +235,25 @@ public class StompContext {
         public void execute() {
             while (running.get()) {
                 try {
-                    for (final StompConnection connection : connections) {
-                        if (connection.isConnected()) {
-                            registerSubscriptions(connection);
-                            writeFrames(connection);
+                    selector.select(RECONNECT_TIMEOUT);
+
+                    final Iterator<SelectionKey> iterator = selector.selectedKeys().iterator();
+                    if (iterator.hasNext()) {
+                        final SelectionKey key = iterator.next();
+                        if (key.isReadable()) {
+                            final StompConnection connection = (StompConnection) key.attachment();
                             readFrames(connection);
-                        } else {
+                        }
+                        iterator.remove();
+                    }
+
+                    for (final StompConnection connection : connections) {
+                        if (connection.getState() == StompConnection.State.DISCONNECTED) {
                             if (!connection.getTransmitJobs().isEmpty()) {
                                 connection.connect();
                             }
+                        } else {
+                            writeFrames(connection);
                         }
                     }
                 } catch (final Exception ex) {
@@ -268,7 +291,9 @@ public class StompContext {
          * @param connection connection
          */
         private void writeFrames(final StompConnection connection) {
-            if (connection.getSerializer() != null) {
+            final StompSerializer serializer = connection.getSerializer();
+
+            if (serializer != null) {
                 final Iterator<StompFrameTransmitJob> transmitIterator = connection.getTransmitJobs().iterator();
                 while (transmitIterator.hasNext()) {
                     final StompFrameTransmitJob job = transmitIterator.next();
@@ -276,12 +301,17 @@ public class StompContext {
                     try {
                         if (job.getCondition().getAsBoolean()) {
                             connection.applyInterceptors(context);
-                            connection.getSerializer().writeFrame(context.getFrame());
+                            serializer.writeFrame(context.getFrame());
+
+                            log.debug("Sent frame to {} {\n\t{}\n}", connection, context.getFrame());
+
                             transmitIterator.remove();
-                            job.getDeferred().resolve(context);
+                            if (job.getDeferred() != null) {
+                                job.getDeferred().resolve(context);
+                            }
                         }
                     } catch (final Exception ex) {
-                        connection.closeConnection();
+                        connection.close();
                         if (log.isErrorEnabled()) {
                             log.error(String.format(
                                     "Failed to write %s to %s, retrying",
@@ -304,10 +334,9 @@ public class StompContext {
                 try {
                     while (true) {
                         StompFrame frame = connection.getDeserializer().readFrame();
+
                         if (frame != null) {
-                            if (log.isDebugEnabled()) {
-                                log.debug("Got " + frame);
-                            }
+                            log.debug("Got frame for {} {\n\t{}\n}", connection, frame);
 
                             final StompFrameContext context = new StompFrameContext(frame);
                             connection.applyInterceptors(context);
@@ -376,13 +405,32 @@ public class StompContext {
                         }
                     }
                 } catch (final Exception ex) {
-                    connection.closeConnection();
+                    connection.close();
                     if (log.isErrorEnabled()) {
                         log.error(String.format(
                                 "Failed to read frame from %s",
                                 connection.toString()
                         ), ex);
                     }
+                }
+            }
+        }
+
+        /**
+         * Reject invalid await jobs.
+         *
+         * @param connection connection
+         */
+        private void rejectInvalidAwaitJobs(final StompConnection connection) {
+            final Iterator<StompFrameAwaitJob> awaitIterator = connection.getAwaitJobs().iterator();
+            while (awaitIterator.hasNext()) {
+                final StompFrameAwaitJob job = awaitIterator.next();
+                if (job.getValidUntil() < System.currentTimeMillis()) {
+                    awaitIterator.remove();
+                    if (log.isDebugEnabled()) {
+                        log.debug("Rejected wait job for " + connection);
+                    }
+                    job.getDeferred().reject(new TimeoutException());
                 }
             }
         }

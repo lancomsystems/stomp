@@ -6,7 +6,7 @@ import static org.junit.Assert.assertThat;
 
 import org.junit.Test;
 
-public class SompEncodingTest {
+public class StompEncodingTest {
 
     @Test
     public void encode() {

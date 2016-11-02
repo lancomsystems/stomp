@@ -5,6 +5,10 @@ branches:
   only:
     - master
 
+cache:
+  directories:
+  - $HOME/.gradle
+
 after_success:
   if [ "${TRAVIS_BRANCH}" == "master" ] && [ "$TRAVIS_PULL_REQUEST" == "false" ]; then
     ./gradlew uploadArchives -PsigningPassword="${SIGNING_PASSWORD}" -PpublishUser="${PUBLISH_USER}" -PpublishPassword="${PUBLISH_PASSWORD}";

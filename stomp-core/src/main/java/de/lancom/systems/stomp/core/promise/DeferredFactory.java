@@ -9,8 +9,6 @@ import java.util.concurrent.TimeUnit;
 import de.lancom.systems.stomp.core.promise.callback.ConsumerCallback;
 import de.lancom.systems.stomp.core.promise.callback.ExecutorCallback;
 import de.lancom.systems.stomp.core.promise.callback.ProcessorCallback;
-import de.lancom.systems.stomp.core.promise.callback.PromiseProcessorCallback;
-import de.lancom.systems.stomp.core.promise.callback.PromiseSupplierCallback;
 import de.lancom.systems.stomp.core.promise.callback.SupplierCallback;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
@@ -259,147 +257,28 @@ public class DeferredFactory {
             this.deferred = deferred;
         }
 
-        /**
-         * Create promise using callbacks.
-         *
-         * @param success success callback
-         * @param fail fail callback
-         * @param <X> promise result type
-         * @return promise
-         */
-        private <X> Promise<X> createPromise(
-                final ProcessorCallback<T, X> success,
-                final ProcessorCallback<Exception, X> fail
-        ) {
-            final Deferred<X> result = this.factory.defer();
-
-            if (success != null) {
-                this.deferred.getSuccessHandlers().add((r) -> {
-                    try {
-                        result.resolve(success.process(r));
-                    } catch (final Exception ex) {
-                        result.reject(ex);
-                    }
-                });
-            }
-
-            if (fail != null) {
-                this.deferred.getFailHandlers().add((e) -> {
-                    try {
-                        result.resolve(fail.process(e));
-                    } catch (final Exception ex) {
-                        result.reject(ex);
-                    }
-                });
-            }
-
-            return result.getPromise();
-        }
-
         @Override
-        public <X> Promise<X> then(final ProcessorCallback<T, X> success) {
-            return this.createPromise(
-                    success,
-                    null
-            );
+        public <X> Promise<X> then(final ProcessorCallback<T, ?> success) {
+            return this.createPromise(success, null);
         }
 
         @Override
         public <X> Promise<X> then(
-                final ProcessorCallback<T, X> success,
-                final ProcessorCallback<Exception, X> fail
+                final ProcessorCallback<T, ?> success, final ProcessorCallback<Exception, ?> fail
         ) {
-            return this.createPromise(
-                    success,
-                    fail
-            );
+            return this.createPromise(success, fail);
         }
 
         @Override
-        public <X> Promise<X> then(
-                final ProcessorCallback<T, X> success,
-                final PromiseProcessorCallback<Exception, X> fail
-        ) {
-            return this.createPromise(
-                    success,
-                    (e) -> fail.process(e).get()
-            );
+        public <X> Promise<X> then(final ProcessorCallback<T, ?> success, final SupplierCallback<?> fail) {
+            return this.createPromise(success, (c) -> fail);
         }
 
         @Override
-        public <X> Promise<X> then(
-                final ProcessorCallback<T, X> success, final PromiseSupplierCallback<X> fail
-        ) {
-            return this.createPromise(
-                    success,
-                    (e) -> fail.supply().get()
-            );
-        }
-
-        @Override
-        public <X> Promise<X> then(
-                final ProcessorCallback<T, X> success, final SupplierCallback<X> fail
-        ) {
-            return this.createPromise(
-                    success,
-                    (e) -> fail.supply()
-            );
-        }
-
-        @Override
-        public <X> Promise<X> then(final PromiseProcessorCallback<T, X> success) {
-            return this.createPromise(
-                    (r) -> success.process(r).get(),
-                    null
-            );
-        }
-
-        @Override
-        public <X> Promise<X> then(
-                final PromiseProcessorCallback<T, X> success,
-                final ProcessorCallback<Exception, X> fail
-        ) {
-            return this.createPromise(
-                    (r) -> success.process(r).get(),
-                    (e) -> fail.process(e)
-            );
-        }
-
-        @Override
-        public <X> Promise<X> then(
-                final PromiseProcessorCallback<T, X> success, final PromiseProcessorCallback<Exception, X> fail
-        ) {
-            return this.createPromise(
-                    (r) -> success.process(r).get(),
-                    (e) -> fail.process(e).get()
-            );
-        }
-
-        @Override
-        public <X> Promise<X> then(
-                final PromiseProcessorCallback<T, X> success, final PromiseSupplierCallback<X> fail
-        ) {
-            return this.createPromise(
-                    (r) -> success.process(r).get(),
-                    (e) -> fail.supply().get()
-            );
-        }
-
-        @Override
-        public <X> Promise<X> then(
-                final PromiseProcessorCallback<T, X> success, final SupplierCallback<X> fail
-        ) {
-            return this.createPromise(
-                    (r) -> success.process(r).get(),
-                    (e) -> fail.supply()
-            );
-        }
-
-        @Override
-        public Promise<Void> then(final ConsumerCallback<T> success) {
+        public Promise<Void> then(final ExecutorCallback success) {
             return this.createPromise(
                     (r) -> {
-                        success.consume(this.deferred.getResult());
+                        success.execute();
                         return null;
                     },
                     null
@@ -423,18 +302,10 @@ public class DeferredFactory {
         }
 
         @Override
-        public Promise<T> fail(final SupplierCallback<T> callback) {
+        public <X> Promise<X> fail(final SupplierCallback<?> callback) {
             return this.createPromise(
                     (r) -> r,
                     (e) -> callback.supply()
-            );
-        }
-
-        @Override
-        public Promise<T> fail(final PromiseProcessorCallback<Exception, T> callback) {
-            return this.createPromise(
-                    (r) -> r,
-                    (e) -> callback.process(e).get()
             );
         }
 
@@ -461,18 +332,10 @@ public class DeferredFactory {
         }
 
         @Override
-        public <X> Promise<X> always(final SupplierCallback<X> callback) {
+        public <X> Promise<X> always(final SupplierCallback<?> callback) {
             return this.createPromise(
                     (r) -> callback.supply(),
                     (e) -> callback.supply()
-            );
-        }
-
-        @Override
-        public <X> Promise<X> always(final PromiseSupplierCallback<X> callback) {
-            return this.createPromise(
-                    (r) -> callback.supply().get(),
-                    (e) -> callback.supply().get()
             );
         }
 
@@ -506,7 +369,7 @@ public class DeferredFactory {
         }
 
         @Override
-        public Promise<Void> apply(final Deferred<T> target) {
+        public Promise<Void> apply(final Deferred target) {
             return this.createPromise((r) -> {
                 target.resolve(r);
                 return null;
@@ -551,5 +414,64 @@ public class DeferredFactory {
             }
         }
 
+        @Override
+        public Promise<Void> fail(final Deferred<?> target) {
+            return this.createPromise(null, (e) -> {
+                target.reject(e);
+                return null;
+            });
+        }
+
+        /**
+         * Create promise using callbacks.
+         *
+         * @param success success callback
+         * @param fail fail callback
+         * @param <X> promise result type
+         * @return promise
+         */
+        private <X> Promise<X> createPromise(
+                final ProcessorCallback<T, ?> success,
+                final ProcessorCallback<Exception, ?> fail
+        ) {
+            final Deferred<X> result = this.factory.defer();
+
+            if (success != null) {
+                this.deferred.getSuccessHandlers().add((r) -> {
+                    try {
+                        this.resolve(result, success.process(r));
+                    } catch (final Exception ex) {
+                        result.reject(ex);
+                    }
+                });
+            }
+
+            if (fail != null) {
+                this.deferred.getFailHandlers().add((e) -> {
+                    try {
+                        this.resolve(result, fail.process(e));
+                    } catch (final Exception ex) {
+                        result.reject(ex);
+                    }
+                });
+            }
+
+            return result.getPromise();
+        }
+
+        /**
+         * Resolve deferred by value.
+         *
+         * @param target target deferred
+         * @param value value
+         * @param <X> deferred type
+         */
+        private <X> void resolve(final Deferred<X> target, final Object value) {
+            if (value instanceof Promise) {
+                Promise.class.cast(value).apply(target);
+            } else {
+                target.resolve((X) value);
+            }
+        }
     }
 }

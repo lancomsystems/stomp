@@ -1,5 +1,8 @@
 package de.lancom.systems.stomp.core.wire;
 
+import static de.lancom.systems.stomp.core.wire.Constants.BROKER;
+import static de.lancom.systems.stomp.core.wire.Constants.CONTEXT;
+import static de.lancom.systems.stomp.core.wire.Constants.TIMEOUT_SECONDS;
 import static java.util.UUID.randomUUID;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
@@ -10,28 +13,28 @@ import static org.junit.Assert.assertTrue;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
-import de.lancom.systems.stomp.core.StompContext;
 import de.lancom.systems.stomp.core.connection.StompConnection;
 import de.lancom.systems.stomp.core.connection.StompFrameContext;
 import de.lancom.systems.stomp.core.connection.StompFrameContextInterceptors;
 import de.lancom.systems.stomp.core.connection.StompSubscription;
 import de.lancom.systems.stomp.core.promise.Promise;
 import de.lancom.systems.stomp.test.AsyncHolder;
-import de.lancom.systems.stomp.test.StompBroker;
 import org.junit.AfterClass;
+import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
 
 public class StompConnectionTest {
 
-    protected static final StompBroker BROKER = StompBroker.run();
-    protected static final StompContext CONTEXT = StompContext.run();
-    protected static final StompConnection CONNECTION = new StompConnection(CONTEXT, "localhost", BROKER.getPort());
-    protected static final int TIMEOUT_SECONDS = 2;
+    private StompConnection connection  = new StompConnection(CONTEXT, "localhost", BROKER.getPort());
+
+    @BeforeClass
+    public static void startBroker() throws Exception {
+        BROKER.start();
+    }
 
     @AfterClass
     public static void stopBroker() throws Exception {
-        CONTEXT.stop();
         BROKER.stop();
     }
 
@@ -41,7 +44,7 @@ public class StompConnectionTest {
 
         assertTrue(
                 "Send failed",
-                CONNECTION.send(destination, "Test").await(TIMEOUT_SECONDS, TimeUnit.SECONDS)
+                connection.send(destination, "Test").await(TIMEOUT_SECONDS, TimeUnit.SECONDS)
         );
     }
 
@@ -52,7 +55,7 @@ public class StompConnectionTest {
 
         final AsyncHolder<String> holder = AsyncHolder.create();
 
-        final StompSubscription subscription = CONNECTION.createSubscription(destination, c -> {
+        final StompSubscription subscription = connection.createSubscription(destination, c -> {
             holder.set(c.getFrame().getBodyAsString());
             return true;
         });
@@ -65,7 +68,7 @@ public class StompConnectionTest {
 
             assertTrue(
                     "Send failed",
-                    CONNECTION.send(destination, message).await(TIMEOUT_SECONDS, TimeUnit.SECONDS)
+                    connection.send(destination, message).await(TIMEOUT_SECONDS, TimeUnit.SECONDS)
             );
 
             final String result = holder.get(TIMEOUT_SECONDS, TimeUnit.SECONDS);
@@ -84,12 +87,12 @@ public class StompConnectionTest {
         final AsyncHolder<String> holder1 = AsyncHolder.create();
         final AsyncHolder<String> holder2 = AsyncHolder.create();
 
-        final StompSubscription subscription1 = CONNECTION.createSubscription(destination, c -> {
+        final StompSubscription subscription1 = connection.createSubscription(destination, c -> {
             holder1.set(c.getFrame().getBodyAsString());
             return true;
         });
 
-        final StompSubscription subscription2 = CONNECTION.createSubscription(destination, c -> {
+        final StompSubscription subscription2 = connection.createSubscription(destination, c -> {
             holder2.set(c.getFrame().getBodyAsString());
             return true;
         });
@@ -106,7 +109,7 @@ public class StompConnectionTest {
 
             assertTrue(
                     "Send failed",
-                    CONNECTION.send(destination, message).await(TIMEOUT_SECONDS, TimeUnit.SECONDS)
+                    connection.send(destination, message).await(TIMEOUT_SECONDS, TimeUnit.SECONDS)
             );
 
             final String result1 = holder1.get(TIMEOUT_SECONDS, TimeUnit.SECONDS);
@@ -115,8 +118,8 @@ public class StompConnectionTest {
             final String result2 = holder2.get(TIMEOUT_SECONDS, TimeUnit.SECONDS);
             assertThat(result2, is(equalTo(message)));
         } finally {
-            CONNECTION.removeSubscription(subscription1.getId());
-            CONNECTION.removeSubscription(subscription2.getId());
+            connection.removeSubscription(subscription1.getId());
+            connection.removeSubscription(subscription2.getId());
         }
     }
 
@@ -126,26 +129,25 @@ public class StompConnectionTest {
         final String destination = String.format("/queue/%s", UUID.randomUUID());
         final String message = randomUUID().toString();
 
-        final StompSubscription subscription = CONNECTION.createSubscription(
-                destination,
-                c -> true
-        );
+        final StompSubscription subscription = connection.createSubscription(destination, c -> true);
 
         try {
             final AsyncHolder<Boolean> holder = AsyncHolder.create();
 
-            CONNECTION.addInterceptor(StompFrameContextInterceptors.builder().hasAction("ACK").match(holder::set).build());
+            connection.addInterceptor(
+                    StompFrameContextInterceptors.builder().hasAction("ACK").match(holder::set).build()
+            );
             subscription.getSubscribeFrame().setAckMode(StompAckMode.CLIENT_INDIVIDUAL);
             assertTrue(
                     "Subscription failed",
                     subscription.subscribe().await(TIMEOUT_SECONDS, TimeUnit.SECONDS)
             );
 
-            CONNECTION.send(destination, message).get();
+            connection.send(destination, message).get();
 
             assertThat(holder.get(TIMEOUT_SECONDS, TimeUnit.SECONDS), is(Boolean.TRUE));
         } finally {
-            CONNECTION.removeSubscription(subscription.getId());
+            connection.removeSubscription(subscription.getId());
         }
     }
 
@@ -159,9 +161,12 @@ public class StompConnectionTest {
         try {
             final AsyncHolder<Boolean> holder = AsyncHolder.create();
 
-            CONNECTION.addInterceptor(StompFrameContextInterceptors.builder().hasAction("NACK").match(holder::set).build());
+            connection.addInterceptor(StompFrameContextInterceptors.builder()
+                                              .hasAction("NACK")
+                                              .match(holder::set)
+                                              .build());
 
-            final StompSubscription subscription = CONNECTION.createSubscription(
+            final StompSubscription subscription = connection.createSubscription(
                     subscriptionId,
                     destination,
                     c -> false
@@ -172,11 +177,11 @@ public class StompConnectionTest {
                     subscription.subscribe().await(TIMEOUT_SECONDS, TimeUnit.SECONDS)
             );
 
-            CONNECTION.send(destination, message);
+            connection.send(destination, message);
 
             assertThat(holder.get(TIMEOUT_SECONDS, TimeUnit.SECONDS), is(Boolean.TRUE));
         } finally {
-            CONNECTION.removeSubscription(subscriptionId);
+            connection.removeSubscription(subscriptionId);
         }
     }
 
@@ -190,9 +195,12 @@ public class StompConnectionTest {
         try {
             final AsyncHolder<Boolean> holder = AsyncHolder.create();
 
-            CONNECTION.addInterceptor(StompFrameContextInterceptors.builder().hasAction("NACK").match(holder::set).build());
+            connection.addInterceptor(StompFrameContextInterceptors.builder()
+                                              .hasAction("NACK")
+                                              .match(holder::set)
+                                              .build());
 
-            final StompSubscription subscription = CONNECTION.createSubscription(subscriptionId, destination, c -> {
+            final StompSubscription subscription = connection.createSubscription(subscriptionId, destination, c -> {
                 throw new Exception("Failed");
             });
             subscription.getSubscribeFrame().setAckMode(StompAckMode.CLIENT_INDIVIDUAL);
@@ -202,11 +210,11 @@ public class StompConnectionTest {
                     subscription.subscribe().await(TIMEOUT_SECONDS, TimeUnit.SECONDS)
             );
 
-            CONNECTION.send(destination, message);
+            connection.send(destination, message);
 
             assertThat(holder.get(TIMEOUT_SECONDS, TimeUnit.SECONDS), is(Boolean.TRUE));
         } finally {
-            CONNECTION.removeSubscription(subscriptionId);
+            connection.removeSubscription(subscriptionId);
         }
 
     }
@@ -220,13 +228,13 @@ public class StompConnectionTest {
 
         final AsyncHolder<String> holder = AsyncHolder.create();
 
-        final StompSubscription subscription = CONNECTION.createSubscription(destination, c -> {
+        final StompSubscription subscription = connection.createSubscription(destination, c -> {
             holder.set(c.getFrame().getBodyAsString());
             return true;
         });
 
         try {
-            CONNECTION.disconnect();
+            connection.disconnect();
             BROKER.stop();
 
             subscription.subscribe();
@@ -240,7 +248,7 @@ public class StompConnectionTest {
 
             assertTrue(
                     "Send failed",
-                    CONNECTION.send(destination, message).await(TIMEOUT_SECONDS, TimeUnit.SECONDS)
+                    connection.send(destination, message).await(TIMEOUT_SECONDS, TimeUnit.SECONDS)
             );
 
             final String result = holder.get(TIMEOUT_SECONDS, TimeUnit.SECONDS);
@@ -261,14 +269,13 @@ public class StompConnectionTest {
 
         final AsyncHolder<String> holder = AsyncHolder.create();
 
-        final StompSubscription subscription = CONNECTION.createSubscription(destination, c -> {
+        final StompSubscription subscription = connection.createSubscription(destination, c -> {
             holder.set(c.getFrame().getBodyAsString());
             return true;
         });
 
         try {
 
-            CONNECTION.addInterceptor(StompFrameContextInterceptors.logger());
             assertTrue(
                     "Subscription failed",
                     subscription.subscribe().await(TIMEOUT_SECONDS, TimeUnit.SECONDS)
@@ -276,7 +283,7 @@ public class StompConnectionTest {
 
             BROKER.stop();
 
-            final Promise<StompFrameContext> promise = CONNECTION.send(destination, message);
+            final Promise<StompFrameContext> promise = connection.send(destination, message);
 
             BROKER.start();
             assertTrue(
@@ -294,4 +301,10 @@ public class StompConnectionTest {
 
     }
 
+    private StompConnection createConnection() {
+        final StompConnection connection = new StompConnection(CONTEXT, "localhost", BROKER.getPort());
+        connection.addInterceptor(StompFrameContextInterceptors.logger());
+
+        return connection;
+    }
 }

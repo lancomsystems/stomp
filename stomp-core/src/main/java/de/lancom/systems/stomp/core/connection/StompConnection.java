@@ -1,10 +1,11 @@
 package de.lancom.systems.stomp.core.connection;
 
+import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
 import java.util.Queue;
@@ -12,6 +13,11 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReadWriteLock;
+import java.util.concurrent.locks.ReentrantLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.function.BooleanSupplier;
 
 import de.lancom.systems.stomp.core.StompContext;
@@ -36,10 +42,19 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class StompConnection {
 
+    private static final AtomicInteger COUNTER = new AtomicInteger();
+
+    private final List<StompSubscription> subscriptions = new CopyOnWriteArrayList<>();
+    private final List<StompFrameContextInterceptor> interceptors = new CopyOnWriteArrayList<>();
+    private final ReadWriteLock stateLock = new ReentrantReadWriteLock();
+    private final Lock connectLock = new ReentrantLock();
+    private State state = State.DISCONNECTED;
     @Getter
     private final Queue<StompFrameTransmitJob> transmitJobs = new ConcurrentLinkedQueue<>();
     @Getter
     private final Queue<StompFrameAwaitJob> awaitJobs = new ConcurrentLinkedQueue<>();
+    @Getter
+    private final int id;
     @Getter
     private final String host;
     @Getter
@@ -49,18 +64,16 @@ public class StompConnection {
     @Getter
     private final DisconnectFrame disconnectFrame;
     @Getter
-    private Promise<Void> readyPromise;
+    private Promise<Void> connectionPromise;
     @Getter
     private StompDeserializer deserializer;
     @Getter
     private StompSerializer serializer;
-
-    private final List<StompSubscription> subscriptions = new CopyOnWriteArrayList<>();
-    private final List<StompFrameContextInterceptor> interceptors = new CopyOnWriteArrayList<>();
+    @Getter
+    private SocketChannel channel;
 
     private final StompContext stompContext;
 
-    private SocketChannel channel;
     private long reconnectLock;
 
     /**
@@ -82,6 +95,7 @@ public class StompConnection {
      * @param port port
      */
     public StompConnection(final StompContext stompContext, final String host, final int port) {
+        this.id = COUNTER.incrementAndGet();
         this.stompContext = stompContext;
         this.stompContext.addConnection(this);
         this.host = host;
@@ -91,32 +105,6 @@ public class StompConnection {
         this.disconnectFrame = new DisconnectFrame();
     }
 
-    /**
-     * Get connection promise.
-     *
-     * @return promise
-     */
-    public Promise<Void> getConnectionPromise() {
-        return readyPromise;
-    }
-
-    /**
-     * Get connection state.
-     *
-     * @return connection state
-     */
-    public boolean isConnected() {
-        return this.channel != null;
-    }
-
-    /**
-     * Get ready state.
-     *
-     * @return ready state
-     */
-    public boolean isReady() {
-        return isConnected() && this.readyPromise != null && this.readyPromise.isSuccess();
-    }
 
     /**
      * Connect to host if required.
@@ -125,48 +113,57 @@ public class StompConnection {
      */
     public Promise<Void> connect() {
         boolean connect = true;
-        connect = connect && !isConnected();
-        connect = connect && this.readyPromise == null || this.readyPromise.isFail();
         connect = connect && System.currentTimeMillis() > this.reconnectLock;
+        connect = connect && this.getState() == State.DISCONNECTED;
 
         if (connect) {
-            this.reconnectLock = System.currentTimeMillis() + TimeUnit.SECONDS.toMillis(2);
+            final Deferred<Void> deferred = this.stompContext.getDeferred().defer();
 
-            if (log.isDebugEnabled()) {
-                log.debug("Connecting to " + this);
-            }
+            this.connectionPromise = deferred.getPromise();
+            this.connectionPromise.fail(
+                    (ex) -> {
+                        this.close();
+                        if (log.isWarnEnabled()) {
+                            log.warn("Connection to {} failed, retrying", this);
+                        }
+                    }
+            );
 
-            final Promise<Void> promise = stompContext.getDeferred().defer(() -> {
-                final InetSocketAddress address = new InetSocketAddress(host, port);
-                final SocketChannel createdChannel = SocketChannel.open(address);
+            try {
+
+                this.connectLock.lock();
+
+                this.setState(State.CONNECTED);
+                this.reconnectLock = System.currentTimeMillis() + TimeUnit.SECONDS.toMillis(2);
+
+                log.debug("Connecting to {}", this);
+                final SocketChannel createdChannel = SocketChannel.open(new InetSocketAddress(host, port));
                 createdChannel.configureBlocking(false);
+                createdChannel.register(this.stompContext.getSelector(), SelectionKey.OP_READ, this);
 
                 this.deserializer = new StompDeserializer(this.stompContext, createdChannel);
                 this.serializer = new StompSerializer(this.stompContext, createdChannel);
-                this.channel = SocketChannel.open(address);
-                this.channel.configureBlocking(false);
-                if (log.isDebugEnabled()) {
-                    log.debug("Connected to " + this);
-                }
-                this.transmitFrameAndAwait(
+                this.channel = createdChannel;
+
+
+                return this.transmitFrameAndAwait(
                         new StompFrameContext(this.connectFrame),
-                        () -> true,
+                        () -> this.state == State.CONNECTED,
                         c -> Objects.equals(StompAction.CONNECTED.value(), c.getFrame().getAction())
-                ).get();
-                if (log.isDebugEnabled()) {
-                    log.debug("Ready " + this);
-                }
-                this.reconnectLock = 0;
-            });
-            promise.fail((ex) -> {
-                if (log.isWarnEnabled()) {
-                    log.warn("Connection to " + this + " failed, retrying");
-                }
-            });
-
-            this.readyPromise = promise.then();
-
-            return this.readyPromise;
+                ).then(
+                        () -> {
+                            this.setState(State.AUTHORIZED);
+                            for (final StompSubscription subscription : this.getSubscriptionsForRegistration()) {
+                                subscription.subscribe();
+                            }
+                        }
+                ).apply(deferred);
+            } catch (final IOException ex) {
+                deferred.reject(ex);
+            } finally {
+                this.connectLock.unlock();
+            }
+            return this.connectionPromise;
         } else {
             return this.stompContext.getDeferred().success();
         }
@@ -178,12 +175,12 @@ public class StompConnection {
      * @return disconnection promise
      */
     public Promise<Void> disconnect() {
-        if (this.readyPromise != null) {
+        if (this.connectionPromise != null) {
             if (log.isDebugEnabled()) {
                 log.debug("Disconnecting from " + this);
             }
 
-            Promise<Void> promise = this.readyPromise;
+            Promise<Void> promise = this.connectionPromise;
 
             for (final StompSubscription subscription : subscriptions) {
                 promise = promise.always(subscription::unsubscribe);
@@ -192,7 +189,7 @@ public class StompConnection {
             promise = promise.always(() -> this.transmitFrame(disconnectFrame).always());
 
             promise = promise.always(() -> {
-                this.closeConnection();
+                this.close();
 
                 if (log.isDebugEnabled()) {
                     log.debug("Disconnected  from" + this);
@@ -208,24 +205,31 @@ public class StompConnection {
     /**
      * Close connection.
      */
-    public void closeConnection() {
+    public void close() {
         try {
-            if (this.isReady() && log.isErrorEnabled()) {
-                log.error("Lost " + this);
+            if (this.getState() == State.AUTHORIZED) {
+                log.warn("Lost connection to" + this);
             }
-            this.readyPromise = null;
+            this.connectionPromise = null;
             this.serializer = null;
             this.deserializer = null;
-            this.channel.close();
-            this.channel = null;
+
+            if (this.channel != null) {
+                if (this.channel.isConnected()) {
+                    this.channel.close();
+                }
+                this.channel = null;
+            }
 
             for (final StompSubscription subscription : subscriptions) {
                 subscription.reset();
             }
         } catch (final Exception ex) {
             if (log.isErrorEnabled()) {
-                log.error("Could not close " + this);
+                log.error("Could not close {}", this, ex);
             }
+        } finally {
+            this.setState(State.DISCONNECTED);
         }
     }
 
@@ -246,18 +250,25 @@ public class StompConnection {
     /**
      * Create a new subscription for the given destination using the given id and the given handler.
      *
-     * @param id id
+     * @param subscriptionId id
      * @param destination destination
      * @param handler handler
      * @return subscription
      */
     public StompSubscription createSubscription(
-            @NonNull final String id,
+            @NonNull final String subscriptionId,
             @NonNull final String destination,
             @NonNull final StompFrameContextHandler handler
     ) {
-        final StompSubscription subscription = new StompSubscription(stompContext, this, id, destination, handler);
+        final StompSubscription subscription = new StompSubscription(
+                stompContext,
+                this,
+                subscriptionId,
+                destination,
+                handler
+        );
         this.subscriptions.add(subscription);
+        this.stompContext.getSelector().wakeup();
         return subscription;
     }
 
@@ -294,14 +305,14 @@ public class StompConnection {
     /**
      * Get subscription with the given id.
      *
-     * @param id id
+     * @param subscriptionId id
      * @return subscription
      */
     public StompSubscription getSubscription(
-            @NonNull final String id
+            @NonNull final String subscriptionId
     ) {
         for (final StompSubscription subscription : this.subscriptions) {
-            if (Objects.equals(id, subscription.getId())) {
+            if (Objects.equals(subscriptionId, subscription.getId())) {
                 return subscription;
             }
         }
@@ -311,14 +322,14 @@ public class StompConnection {
     /**
      * Remove subscription with the given id.
      *
-     * @param id id
+     * @param subscriptionId id
      * @return removed subscription
      */
     public StompSubscription removeSubscription(
-            @NonNull final String id
+            @NonNull final String subscriptionId
     ) {
         for (final StompSubscription subscription : this.subscriptions) {
-            if (Objects.equals(id, subscription.getId())) {
+            if (Objects.equals(subscriptionId, subscription.getId())) {
                 subscription.unsubscribe();
                 this.subscriptions.remove(subscription);
                 return subscription;
@@ -399,29 +410,27 @@ public class StompConnection {
     }
 
     /**
-     * Remove interceptor instance from frame interceptor queue.
+     * Remove interceptorDelegator instance from frame interceptorDelegator queue.
      *
-     * @param interceptor interceptor
+     * @param target target
      */
-    public void removeIntercetor(final StompFrameContextHandler interceptor) {
-        final Iterator<StompFrameContextInterceptor> iterator = interceptors.iterator();
-        while (iterator.hasNext()) {
-            if (Objects.equals(iterator.next(), interceptor)) {
-                iterator.remove();
+    public void removeIntercetor(final StompFrameContextInterceptor target) {
+        for (final StompFrameContextInterceptor interceptor : interceptors) {
+            if (Objects.equals(interceptor, target)) {
+                interceptors.remove(interceptor);
             }
         }
     }
 
     /**
-     * Remove interceptor of given type from frame interceptor queue.
+     * Remove interceptorDelegator of given type from frame interceptorDelegator queue.
      *
-     * @param interceptorClass interceptor class
+     * @param interceptorClass interceptorDelegator class
      */
-    public void removeIntercetor(final Class<? extends StompFrameContextHandler> interceptorClass) {
-        final Iterator<StompFrameContextInterceptor> iterator = interceptors.iterator();
-        while (iterator.hasNext()) {
-            if (interceptorClass.isAssignableFrom(iterator.next().getClass())) {
-                iterator.remove();
+    public void removeIntercetor(final Class<? extends StompFrameContextInterceptor> interceptorClass) {
+        for (final StompFrameContextInterceptor interceptor : interceptors) {
+            if (interceptorClass.isAssignableFrom(interceptor.getClass())) {
+                interceptors.remove(interceptor);
             }
         }
     }
@@ -461,7 +470,7 @@ public class StompConnection {
      * @return promise
      */
     public Promise<StompFrameContext> transmitFrame(@NonNull final StompFrame frame) {
-        return this.transmitFrame(frame, this::isReady);
+        return this.transmitFrame(frame, () -> this.state == State.AUTHORIZED);
     }
 
     /**
@@ -525,7 +534,7 @@ public class StompConnection {
             @NonNull final StompFrameContext context,
             @NonNull final StompFrameContextHandler handler
     ) {
-        return this.transmitFrameAndAwait(context, this::isReady, handler);
+        return this.transmitFrameAndAwait(context, () -> this.state == State.AUTHORIZED, handler);
     }
 
     /**
@@ -544,16 +553,19 @@ public class StompConnection {
         final Deferred<StompFrameContext> result = stompContext.getDeferred().defer();
         try {
             if (handler != null) {
-                final Deferred<StompFrameContext> deferred = stompContext.getDeferred().defer();
-
                 awaitFrame(handler).apply(result);
 
-                this.transmitJobs.add(new StompFrameTransmitJob(context, condition, deferred));
+                final Deferred<StompFrameContext> transmit = stompContext.getDeferred().defer();
+                transmit.getPromise().fail(result);
+
+                this.transmitJobs.add(new StompFrameTransmitJob(context, condition, transmit));
             } else {
                 this.transmitJobs.add(new StompFrameTransmitJob(context, condition, result));
             }
         } catch (final Exception ex) {
             result.reject(ex);
+        } finally {
+            this.stompContext.getSelector().wakeup();
         }
         return result.getPromise();
     }
@@ -567,9 +579,29 @@ public class StompConnection {
     public Promise<StompFrameContext> awaitFrame(
             @NonNull final StompFrameContextHandler handler
     ) {
+        return this.awaitFrame(handler, null);
+    }
+
+    /**
+     * Await frame.
+     *
+     * @param handler frame handler
+     * @param timeout timeout
+     * @return promise
+     */
+    public Promise<StompFrameContext> awaitFrame(
+            @NonNull final StompFrameContextHandler handler,
+            final Long timeout
+    ) {
         final Deferred<StompFrameContext> deferred = stompContext.getDeferred().defer();
         try {
-            this.awaitJobs.add(new StompFrameAwaitJob(handler, deferred));
+            final Long validUntil;
+            if (timeout != null) {
+                validUntil = System.currentTimeMillis() + timeout;
+            } else {
+                validUntil = System.currentTimeMillis() + this.stompContext.getTimeout();
+            }
+            this.awaitJobs.add(new StompFrameAwaitJob(handler, deferred, validUntil));
         } catch (final Exception ex) {
             deferred.reject(ex);
         }
@@ -598,12 +630,62 @@ public class StompConnection {
         final StringBuilder builder = new StringBuilder();
         builder.append(this.getClass().getSimpleName());
         builder.append('(');
-        builder.append("host: ").append(host);
+        builder.append("id: ").append(id);
+        builder.append(", host: ").append(host);
         builder.append(", port: ").append(port);
+        builder.append(", state: ").append(state);
         if (this.getConnectFrame().getLogin() != null) {
             builder.append(", login: ").append(this.getConnectFrame().getLogin());
         }
         builder.append(')');
         return builder.toString();
+    }
+
+    /**
+     * Get current state.
+     *
+     * @return state
+     */
+    public State getState() {
+        try {
+            this.stateLock.readLock().lock();
+            return state;
+        } finally {
+            this.stateLock.readLock().unlock();
+        }
+    }
+
+    /**
+     * Update current state.
+     *
+     * @param state state
+     */
+    public void setState(final State state) {
+        try {
+            this.stateLock.writeLock().lock();
+            log.debug("Connection state for {} changing to {} ", this, state);
+            this.state = state;
+            this.stompContext.getSelector().wakeup();
+        } finally {
+            this.stateLock.writeLock().unlock();
+        }
+    }
+
+    /**
+     * Connection state.
+     */
+    public enum State {
+        /**
+         * Connection is not connected to server.
+         */
+        DISCONNECTED,
+        /**
+         * Connection is connected to server.
+         */
+        CONNECTED,
+        /**
+         * Connection is authorized with server.
+         */
+        AUTHORIZED
     }
 }
