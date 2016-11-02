@@ -14,6 +14,7 @@ import de.lancom.systems.stomp.core.connection.StompFrameContextHandler;
 import de.lancom.systems.stomp.core.connection.StompFrameContextInterceptor;
 import de.lancom.systems.stomp.core.connection.StompSubscription;
 import de.lancom.systems.stomp.core.promise.Promise;
+import de.lancom.systems.stomp.core.wire.StompData;
 import de.lancom.systems.stomp.core.wire.StompFrame;
 import lombok.Getter;
 import lombok.NonNull;
@@ -114,6 +115,20 @@ public class StompClient {
             final byte[] body
     ) {
         return getConnection(url, true).send(url.getDestination(), body);
+    }
+
+    /**
+     * Send the given data.
+     *
+     * @param url url
+     * @param data data
+     * @return promise
+     */
+    public Promise<StompFrameContext> send(
+            final StompUrl url,
+            final StompData data
+    ) {
+        return getConnection(url, true).send(url.getDestination(), data);
     }
 
     /**

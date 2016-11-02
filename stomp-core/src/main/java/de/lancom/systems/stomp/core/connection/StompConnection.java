@@ -24,6 +24,7 @@ import de.lancom.systems.stomp.core.StompContext;
 import de.lancom.systems.stomp.core.promise.Deferred;
 import de.lancom.systems.stomp.core.promise.Promise;
 import de.lancom.systems.stomp.core.wire.StompAction;
+import de.lancom.systems.stomp.core.wire.StompData;
 import de.lancom.systems.stomp.core.wire.StompDeserializer;
 import de.lancom.systems.stomp.core.wire.StompFrame;
 import de.lancom.systems.stomp.core.wire.StompHeader;
@@ -105,7 +106,6 @@ public class StompConnection {
         this.disconnectFrame = new DisconnectFrame();
     }
 
-
     /**
      * Connect to host if required.
      *
@@ -144,7 +144,6 @@ public class StompConnection {
                 this.deserializer = new StompDeserializer(this.stompContext, createdChannel);
                 this.serializer = new StompSerializer(this.stompContext, createdChannel);
                 this.channel = createdChannel;
-
 
                 return this.transmitFrameAndAwait(
                         new StompFrameContext(this.connectFrame),
@@ -461,6 +460,22 @@ public class StompConnection {
             final byte[] body
     ) {
         return transmitFrame(new SendFrame(destination, body));
+    }
+
+    /**
+     * Send the given stomp data to the given destination.
+     *
+     * @param destination destination
+     * @param data data
+     * @return promise
+     */
+    public Promise<StompFrameContext> send(
+            final String destination,
+            final StompData data
+    ) {
+        final SendFrame sendFrame = data.copy(new SendFrame(destination));
+        sendFrame.setDestination(destination);
+        return transmitFrame(sendFrame);
     }
 
     /**

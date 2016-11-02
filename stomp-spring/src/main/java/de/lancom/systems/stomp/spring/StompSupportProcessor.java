@@ -17,6 +17,7 @@ import de.lancom.systems.stomp.core.connection.StompFrameContextHandler;
 import de.lancom.systems.stomp.core.connection.StompSubscription;
 import de.lancom.systems.stomp.core.util.StringUtil;
 import de.lancom.systems.stomp.core.wire.StompAckMode;
+import de.lancom.systems.stomp.core.wire.StompData;
 import de.lancom.systems.stomp.core.wire.StompFrame;
 import de.lancom.systems.stomp.core.wire.StompHeader;
 import de.lancom.systems.stomp.core.wire.frame.SendFrame;
@@ -257,6 +258,8 @@ public class StompSupportProcessor implements
                     final Class type = parameterTypes[index];
                     if (type.isAssignableFrom(frame.getClass())) {
                         parameters[index] = frame;
+                    } else if (StompData.class.isAssignableFrom(type)) {
+                        parameters[index] = frame.copy(type);
                     } else if (type == String.class) {
                         parameters[index] = frame.getBodyAsString();
                     } else if (type == byte[].class) {
