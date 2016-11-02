@@ -64,7 +64,7 @@ public class StompConnection {
     @Getter
     private final DisconnectFrame disconnectFrame;
     @Getter
-    private Promise<Void> readyPromise;
+    private Promise<Void> connectionPromise;
     @Getter
     private StompDeserializer deserializer;
     @Getter
@@ -105,27 +105,32 @@ public class StompConnection {
         this.disconnectFrame = new DisconnectFrame();
     }
 
-    /**
-     * Get connection promise.
-     *
-     * @return promise
-     */
-    public Promise<Void> getConnectionPromise() {
-        return readyPromise;
-    }
 
     /**
      * Connect to host if required.
      *
      * @return connection promise
      */
-    public Promise<Void> connect() throws IOException {
+    public Promise<Void> connect() {
         boolean connect = true;
         connect = connect && System.currentTimeMillis() > this.reconnectLock;
         connect = connect && this.getState() == State.DISCONNECTED;
 
         if (connect) {
+            final Deferred<Void> deferred = this.stompContext.getDeferred().defer();
+
+            this.connectionPromise = deferred.getPromise();
+            this.connectionPromise.fail(
+                    (ex) -> {
+                        this.close();
+                        if (log.isWarnEnabled()) {
+                            log.warn("Connection to {} failed, retrying", this);
+                        }
+                    }
+            );
+
             try {
+
                 this.connectLock.lock();
 
                 this.setState(State.CONNECTED);
@@ -140,6 +145,7 @@ public class StompConnection {
                 this.serializer = new StompSerializer(this.stompContext, createdChannel);
                 this.channel = createdChannel;
 
+
                 return this.transmitFrameAndAwait(
                         new StompFrameContext(this.connectFrame),
                         () -> this.state == State.CONNECTED,
@@ -151,20 +157,13 @@ public class StompConnection {
                                 subscription.subscribe();
                             }
                         }
-                ).fail(
-                        (ex) -> {
-                            this.close();
-                            if (log.isWarnEnabled()) {
-                                log.warn("Connection to {} failed, retrying", this);
-                            }
-                        }
-                );
-            } catch (final Exception ex) {
-                this.setState(State.DISCONNECTED);
-                return null;
+                ).apply(deferred);
+            } catch (final IOException ex) {
+                deferred.reject(ex);
             } finally {
                 this.connectLock.unlock();
             }
+            return this.connectionPromise;
         } else {
             return this.stompContext.getDeferred().success();
         }
@@ -176,12 +175,12 @@ public class StompConnection {
      * @return disconnection promise
      */
     public Promise<Void> disconnect() {
-        if (this.readyPromise != null) {
+        if (this.connectionPromise != null) {
             if (log.isDebugEnabled()) {
                 log.debug("Disconnecting from " + this);
             }
 
-            Promise<Void> promise = this.readyPromise;
+            Promise<Void> promise = this.connectionPromise;
 
             for (final StompSubscription subscription : subscriptions) {
                 promise = promise.always(subscription::unsubscribe);
@@ -211,7 +210,7 @@ public class StompConnection {
             if (this.getState() == State.AUTHORIZED) {
                 log.warn("Lost connection to" + this);
             }
-            this.readyPromise = null;
+            this.connectionPromise = null;
             this.serializer = null;
             this.deserializer = null;
 

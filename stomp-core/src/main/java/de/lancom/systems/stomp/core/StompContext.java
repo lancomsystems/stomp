@@ -47,7 +47,7 @@ import lombok.extern.slf4j.Slf4j;
  */
 @Slf4j
 public class StompContext {
-    private static final long RECONNECT_TIMEOUT = 500;
+    private static final long RECONNECT_TIMEOUT = 1000;
     private static final long DEFAULT_TIMEOUT = 10000;
 
     private static final ThreadFactory THREAD_FACTORY = new NamedDaemonThreadFactory("Stomp");
@@ -235,7 +235,7 @@ public class StompContext {
         public void execute() {
             while (running.get()) {
                 try {
-                    selector.select();
+                    selector.select(RECONNECT_TIMEOUT);
 
                     final Iterator<SelectionKey> iterator = selector.selectedKeys().iterator();
                     if (iterator.hasNext()) {
