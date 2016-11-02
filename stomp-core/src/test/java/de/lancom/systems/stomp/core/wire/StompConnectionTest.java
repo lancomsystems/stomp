@@ -13,11 +13,11 @@ import static org.junit.Assert.assertTrue;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
+import de.lancom.systems.defer.Promise;
 import de.lancom.systems.stomp.core.connection.StompConnection;
 import de.lancom.systems.stomp.core.connection.StompFrameContext;
 import de.lancom.systems.stomp.core.connection.StompFrameContextInterceptors;
 import de.lancom.systems.stomp.core.connection.StompSubscription;
-import de.lancom.systems.stomp.core.promise.Promise;
 import de.lancom.systems.stomp.test.AsyncHolder;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;

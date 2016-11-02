@@ -7,13 +7,13 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.CopyOnWriteArrayList;
 
+import de.lancom.systems.defer.Promise;
 import de.lancom.systems.stomp.core.StompContext;
 import de.lancom.systems.stomp.core.connection.StompConnection;
 import de.lancom.systems.stomp.core.connection.StompFrameContext;
 import de.lancom.systems.stomp.core.connection.StompFrameContextHandler;
 import de.lancom.systems.stomp.core.connection.StompFrameContextInterceptor;
 import de.lancom.systems.stomp.core.connection.StompSubscription;
-import de.lancom.systems.stomp.core.promise.Promise;
 import de.lancom.systems.stomp.core.wire.StompData;
 import de.lancom.systems.stomp.core.wire.StompFrame;
 import lombok.Getter;
