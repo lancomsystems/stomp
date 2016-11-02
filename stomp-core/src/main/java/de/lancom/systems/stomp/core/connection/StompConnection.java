@@ -1,5 +1,6 @@
 package de.lancom.systems.stomp.core.connection;
 
+import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
@@ -13,7 +14,9 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.function.BooleanSupplier;
 
@@ -44,6 +47,7 @@ public class StompConnection {
     private final List<StompSubscription> subscriptions = new CopyOnWriteArrayList<>();
     private final List<StompFrameContextInterceptor> interceptors = new CopyOnWriteArrayList<>();
     private final ReadWriteLock stateLock = new ReentrantReadWriteLock();
+    private final Lock connectLock = new ReentrantLock();
     private State state = State.DISCONNECTED;
     @Getter
     private final Queue<StompFrameTransmitJob> transmitJobs = new ConcurrentLinkedQueue<>();
@@ -67,8 +71,6 @@ public class StompConnection {
     private StompSerializer serializer;
     @Getter
     private SocketChannel channel;
-
-    private SelectionKey selectionKey;
 
     private final StompContext stompContext;
 
@@ -117,59 +119,52 @@ public class StompConnection {
      *
      * @return connection promise
      */
-    public Promise<Void> connect() {
+    public Promise<Void> connect() throws IOException {
         boolean connect = true;
         connect = connect && System.currentTimeMillis() > this.reconnectLock;
         connect = connect && this.getState() == State.DISCONNECTED;
 
         if (connect) {
-            this.setState(State.CONNECTING);
-            this.reconnectLock = System.currentTimeMillis() + TimeUnit.SECONDS.toMillis(2);
+            try {
+                this.connectLock.lock();
 
-            this.readyPromise = stompContext.getDeferred().defer(
-                    () -> {
-                        log.debug("Connecting to {}", this);
-                        final SocketChannel createdChannel = SocketChannel.open(new InetSocketAddress(host, port));
-                        createdChannel.configureBlocking(false);
+                this.setState(State.CONNECTED);
+                this.reconnectLock = System.currentTimeMillis() + TimeUnit.SECONDS.toMillis(2);
 
-                        this.selectionKey = createdChannel.register(
-                                this.stompContext.getSelector(),
-                                SelectionKey.OP_READ,
-                                this
-                        );
+                log.debug("Connecting to {}", this);
+                final SocketChannel createdChannel = SocketChannel.open(new InetSocketAddress(host, port));
+                createdChannel.configureBlocking(false);
+                createdChannel.register(this.stompContext.getSelector(), SelectionKey.OP_READ, this);
 
-                        this.deserializer = new StompDeserializer(this.stompContext, createdChannel);
-                        this.serializer = new StompSerializer(this.stompContext, createdChannel);
-                        this.channel = createdChannel;
+                this.deserializer = new StompDeserializer(this.stompContext, createdChannel);
+                this.serializer = new StompSerializer(this.stompContext, createdChannel);
+                this.channel = createdChannel;
 
-                        this.setState(State.CONNECTED);
-                    }
-            ).then(
-                    context -> {
-                        log.debug("Authorizing with {}", this);
-                        final Promise<StompFrameContext> promise = this.transmitFrameAndAwait(
-                                new StompFrameContext(this.connectFrame),
-                                () -> this.state == State.AUTHORIZING,
-                                c -> Objects.equals(StompAction.CONNECTED.value(), c.getFrame().getAction())
-                        );
-                        this.setState(State.AUTHORIZING);
-                        return promise;
-                    }
-            ).then(
-                    () -> {
-                        this.setState(State.AUTHORIZED);
-                    }
-
-            ).fail(
-                    (ex) -> {
-                        this.close();
-                        if (log.isWarnEnabled()) {
-                            log.warn("Connection to {} failed, retrying", this);
+                return this.transmitFrameAndAwait(
+                        new StompFrameContext(this.connectFrame),
+                        () -> this.state == State.CONNECTED,
+                        c -> Objects.equals(StompAction.CONNECTED.value(), c.getFrame().getAction())
+                ).then(
+                        () -> {
+                            this.setState(State.AUTHORIZED);
+                            for (final StompSubscription subscription : this.getSubscriptionsForRegistration()) {
+                                subscription.subscribe();
+                            }
                         }
-                    }
-            );
-
-            return this.readyPromise;
+                ).fail(
+                        (ex) -> {
+                            this.close();
+                            if (log.isWarnEnabled()) {
+                                log.warn("Connection to {} failed, retrying", this);
+                            }
+                        }
+                );
+            } catch (final Exception ex) {
+                this.setState(State.DISCONNECTED);
+                return null;
+            } finally {
+                this.connectLock.unlock();
+            }
         } else {
             return this.stompContext.getDeferred().success();
         }
@@ -220,11 +215,6 @@ public class StompConnection {
             this.serializer = null;
             this.deserializer = null;
 
-            if (this.selectionKey != null) {
-                this.selectionKey.cancel();
-                this.selectionKey = null;
-            }
-
             if (this.channel != null) {
                 if (this.channel.isConnected()) {
                     this.channel.close();
@@ -237,7 +227,7 @@ public class StompConnection {
             }
         } catch (final Exception ex) {
             if (log.isErrorEnabled()) {
-                log.error("Could not close " + this);
+                log.error("Could not close {}", this, ex);
             }
         } finally {
             this.setState(State.DISCONNECTED);
@@ -691,17 +681,9 @@ public class StompConnection {
          */
         DISCONNECTED,
         /**
-         * Connection is currently connecting to server.
-         */
-        CONNECTING,
-        /**
          * Connection is connected to server.
          */
         CONNECTED,
-        /**
-         * Connection is authorizing with server.
-         */
-        AUTHORIZING,
         /**
          * Connection is authorized with server.
          */

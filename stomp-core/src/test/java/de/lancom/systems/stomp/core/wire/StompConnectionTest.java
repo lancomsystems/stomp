@@ -1,5 +1,7 @@
 package de.lancom.systems.stomp.core.wire;
 
+import static de.lancom.systems.stomp.core.wire.Constants.BROKER;
+import static de.lancom.systems.stomp.core.wire.Constants.CONTEXT;
 import static de.lancom.systems.stomp.core.wire.Constants.TIMEOUT_SECONDS;
 import static java.util.UUID.randomUUID;
 import static org.hamcrest.CoreMatchers.equalTo;
@@ -11,40 +13,29 @@ import static org.junit.Assert.assertTrue;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
-import de.lancom.systems.stomp.core.StompContext;
 import de.lancom.systems.stomp.core.connection.StompConnection;
 import de.lancom.systems.stomp.core.connection.StompFrameContext;
 import de.lancom.systems.stomp.core.connection.StompFrameContextInterceptors;
 import de.lancom.systems.stomp.core.connection.StompSubscription;
 import de.lancom.systems.stomp.core.promise.Promise;
 import de.lancom.systems.stomp.test.AsyncHolder;
-import de.lancom.systems.stomp.test.StompBroker;
-import org.junit.After;
 import org.junit.AfterClass;
-import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
 
 public class StompConnectionTest {
 
-    protected static final StompBroker BROKER = StompBroker.run();
-    protected static final StompContext CONTEXT = StompContext.run();
-    private StompConnection connection;
+    private StompConnection connection  = new StompConnection(CONTEXT, "localhost", BROKER.getPort());
+
+    @BeforeClass
+    public static void startBroker() throws Exception {
+        BROKER.start();
+    }
 
     @AfterClass
     public static void stopBroker() throws Exception {
-        CONTEXT.stop();
         BROKER.stop();
-    }
-
-    @Before
-    public void setupClient() {
-        this.connection = new StompConnection(CONTEXT, "localhost", BROKER.getPort());
-    }
-
-    @After
-    public void teardownClient() {
-        this.connection.close();
     }
 
     @Test

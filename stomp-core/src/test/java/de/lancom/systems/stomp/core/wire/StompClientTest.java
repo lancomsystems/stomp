@@ -1,5 +1,7 @@
 package de.lancom.systems.stomp.core.wire;
 
+import static de.lancom.systems.stomp.core.wire.Constants.BROKER;
+import static de.lancom.systems.stomp.core.wire.Constants.CONTEXT;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.notNullValue;
@@ -8,52 +10,31 @@ import static org.junit.Assert.assertThat;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
-import de.lancom.systems.stomp.core.StompContext;
 import de.lancom.systems.stomp.core.client.StompClient;
 import de.lancom.systems.stomp.core.client.StompUrl;
 import de.lancom.systems.stomp.core.connection.StompFrameContextInterceptors;
 import de.lancom.systems.stomp.core.connection.StompSubscription;
 import de.lancom.systems.stomp.test.AsyncHolder;
-import de.lancom.systems.stomp.test.StompBroker;
-import org.junit.After;
 import org.junit.AfterClass;
-import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
 public class StompClientTest {
 
-    protected static final StompBroker BROKER = new StompBroker();
-    protected static final StompContext CONTEXT = new StompContext();
+    private StompClient client = new StompClient(CONTEXT);
 
     @BeforeClass
     public static void startBroker() throws Exception {
         BROKER.start();
-        CONTEXT.start();
-
     }
 
     @AfterClass
     public static void stopBroker() throws Exception {
-        CONTEXT.stop();
         BROKER.stop();
     }
 
-    @Before
-    public void setupClient() {
-        this.client = new StompClient(CONTEXT);
-    }
-
-    @After
-    public void teardownClient() {
-        this.client.close();
-    }
-
-    private StompClient client = null;
-
     @Test
     public void sendMessage() throws Exception {
-
         final StompUrl url = createStompUrl("/topic/%s", UUID.randomUUID());
         client.send(url, "Test").get(Constants.TIMEOUT_SECONDS, TimeUnit.SECONDS);
     }

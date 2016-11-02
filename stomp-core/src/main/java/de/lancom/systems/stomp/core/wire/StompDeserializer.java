@@ -46,6 +46,7 @@ public class StompDeserializer {
     public synchronized StompFrame readFrame() throws IOException {
         StompFrame frame = null;
 
+        reader.reset();
         while (frame == null && channel.isOpen() && buffer.position() + channel.read(buffer) > 0) {
             // read action
             while (true) {
@@ -65,30 +66,34 @@ public class StompDeserializer {
                 while (true) {
                     final String line = reader.readLine();
 
-                    if (line == null) {
-                        return null;
-                    } else if (isBlank(line)) {
+                    if (isBlank(line)) {
                         break;
-                    }
+                    } else {
+                        final String[] parts = line.split(":", 2);
+                        if (parts.length == 2) {
+                            final String headerName = parts[0];
+                            final String headerValue;
+                            if (Objects.equals(frame.getAction(), StompAction.CONNECT.value())) {
+                                headerValue = parts[1];
+                            } else {
+                                headerValue = StompEncoding.decodeHeaderValue(parts[1]);
+                            }
 
-                    final String[] parts = line.split(":", 2);
-                    if (parts.length == 2) {
-                        final String headerName = parts[0];
-                        final String headerValue;
-                        if (Objects.equals(frame.getAction(), StompAction.CONNECT.value())) {
-                            headerValue = parts[1];
+                            frame.getHeaders().put(headerName, headerValue);
                         } else {
-                            headerValue = StompEncoding.decodeHeaderValue(parts[1]);
+                            throw new RuntimeException(String.format("Error reading frame header line '%s'", line));
                         }
-
-                        frame.getHeaders().put(headerName, headerValue);
                     }
                 }
 
                 // read body
                 final byte[] body = reader.readBlock(frame.getContentLength());
-                if (body != null && body.length > 0) {
-                    frame.setBody(body);
+                if (body != null) {
+                    if (body.length > 0) {
+                        frame.setBody(body);
+                    }
+                } else {
+                    return null;
                 }
 
                 reader.discardEmptyLines();

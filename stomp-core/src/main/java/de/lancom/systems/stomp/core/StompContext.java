@@ -1,5 +1,6 @@
 package de.lancom.systems.stomp.core;
 
+import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -11,6 +12,7 @@ import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -48,9 +50,8 @@ public class StompContext {
     private static final long RECONNECT_TIMEOUT = 500;
     private static final long DEFAULT_TIMEOUT = 10000;
 
-    private static final ExecutorService EXECUTOR_SERVICE = Executors.newCachedThreadPool(
-            new NamedDaemonThreadFactory("Stomp")
-    );
+    private static final ThreadFactory THREAD_FACTORY = new NamedDaemonThreadFactory("Stomp");
+    private static final ExecutorService EXECUTOR_SERVICE = Executors.newCachedThreadPool(THREAD_FACTORY);
 
     private final Map<String, Class<? extends StompFrame>> frameClasses = new HashMap<>();
     private final List<StompConnection> connections = new CopyOnWriteArrayList<>();
@@ -234,7 +235,17 @@ public class StompContext {
         public void execute() {
             while (running.get()) {
                 try {
-                    selector.select(RECONNECT_TIMEOUT);
+                    selector.select();
+
+                    final Iterator<SelectionKey> iterator = selector.selectedKeys().iterator();
+                    if (iterator.hasNext()) {
+                        final SelectionKey key = iterator.next();
+                        if (key.isReadable()) {
+                            final StompConnection connection = (StompConnection) key.attachment();
+                            readFrames(connection);
+                        }
+                        iterator.remove();
+                    }
 
                     for (final StompConnection connection : connections) {
                         if (connection.getState() == StompConnection.State.DISCONNECTED) {
@@ -242,9 +253,7 @@ public class StompContext {
                                 connection.connect();
                             }
                         } else {
-                            registerSubscriptions(connection);
                             writeFrames(connection);
-                            readFrames(connection);
                         }
                     }
                 } catch (final Exception ex) {
@@ -325,6 +334,7 @@ public class StompContext {
                 try {
                     while (true) {
                         StompFrame frame = connection.getDeserializer().readFrame();
+
                         if (frame != null) {
                             log.debug("Got frame for {} {\n\t{}\n}", connection, frame);
 
