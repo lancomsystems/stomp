@@ -1,5 +1,6 @@
 package de.lancom.systems.stomp.spring;
 
+import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
@@ -10,6 +11,7 @@ import de.lancom.systems.stomp.core.client.StompClient;
 import de.lancom.systems.stomp.core.client.StompUrl;
 import de.lancom.systems.stomp.core.connection.StompFrameContextInterceptors;
 import de.lancom.systems.stomp.core.wire.StompAckMode;
+import de.lancom.systems.stomp.core.wire.StompData;
 import de.lancom.systems.stomp.core.wire.StompFrame;
 import de.lancom.systems.stomp.core.wire.frame.SendFrame;
 import de.lancom.systems.stomp.spring.annotation.Subscription;
@@ -31,9 +33,11 @@ public class QueueConsumerTest {
 
     private static final String URL_QUEUE_ACK = "${embedded.broker.url}/queue/f9c786bf-9553-4538-bc6f-a87177c6c67d";
     private static final String URL_QUEUE_NACK = "${embedded.broker.url}/queue/f196be8b-4d58-434a-bd33-20ab259d26d7";
+    private static final String URL_QUEUE_CUSTOM = "${embedded.broker.url}/queue/1e060cb9-5779-4d1b-8829-afc732bb0b67";
 
     private static final AsyncHolder<String> QUEUE_HOLDER_ACK = AsyncHolder.create();
     private static final AsyncHolder<String> QUEUE_HOLDER_NACK = AsyncHolder.create();
+    private static final AsyncHolder<CustomData> QUEUE_HOLDER_CUSTOM = AsyncHolder.create();
 
     @Autowired
     private Environment environment;
@@ -42,13 +46,19 @@ public class QueueConsumerTest {
     private StompClient client;
 
     @Subscription(value = URL_QUEUE_ACK, ackMode = StompAckMode.CLIENT_INDIVIDUAL)
-    public boolean processQueueFrame2(final String body) {
+    public boolean processQueueFrame1(final StompFrame frame) {
         return true;
     }
 
     @Subscription(value = URL_QUEUE_NACK, ackMode = StompAckMode.CLIENT_INDIVIDUAL)
-    public boolean processQueueFrame1(final StompFrame frame) {
+    public boolean processQueueFrame2(final String body) {
         return false;
+    }
+
+    @Subscription(value = URL_QUEUE_CUSTOM, ackMode = StompAckMode.CLIENT_INDIVIDUAL)
+    public boolean processQueueFrame3(final CustomData data) {
+        QUEUE_HOLDER_CUSTOM.set(data);
+        return true;
     }
 
     @Test
@@ -89,7 +99,6 @@ public class QueueConsumerTest {
                         .build()
         );
 
-
         final SendFrame sendFrame = new SendFrame(url.getDestination(), "Body");
 
         assertTrue(
@@ -102,4 +111,36 @@ public class QueueConsumerTest {
 
     }
 
+    @Test
+    public void consumeCustomData() throws Exception {
+        final StompUrl url = StompUrl.parse(environment.resolvePlaceholders(URL_QUEUE_CUSTOM));
+
+        assertTrue(
+                "Send failed",
+                client.send(url, new CustomData("Test")).await(WAIT_SECONDS, TimeUnit.SECONDS)
+        );
+
+        assertTrue(QUEUE_HOLDER_CUSTOM.expect(1, WAIT_SECONDS, TimeUnit.SECONDS));
+        assertThat(QUEUE_HOLDER_CUSTOM.getCount(), is(1));
+        assertThat(QUEUE_HOLDER_CUSTOM.get().getCustom(), is(equalTo("Test")));
+
+    }
+
+
+    public static class CustomData extends StompData {
+        public CustomData() {
+        }
+
+        public CustomData(final String custom) {
+            this.setCustom(custom);
+        }
+
+        public String getCustom() {
+            return this.getHeader("custom");
+        }
+
+        public void setCustom(final String custom) {
+            this.setHeader("custom", custom);
+        }
+    }
 }

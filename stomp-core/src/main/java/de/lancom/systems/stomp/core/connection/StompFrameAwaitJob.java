@@ -1,6 +1,6 @@
 package de.lancom.systems.stomp.core.connection;
 
-import de.lancom.systems.stomp.core.promise.Deferred;
+import de.lancom.systems.defer.Deferred;
 import lombok.Data;
 import lombok.NonNull;
 

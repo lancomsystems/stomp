@@ -1,8 +1,8 @@
 package de.lancom.systems.stomp.core.connection;
 
+import de.lancom.systems.defer.Deferred;
+import de.lancom.systems.defer.Promise;
 import de.lancom.systems.stomp.core.StompContext;
-import de.lancom.systems.stomp.core.promise.Deferred;
-import de.lancom.systems.stomp.core.promise.Promise;
 import de.lancom.systems.stomp.core.wire.frame.SubscribeFrame;
 import de.lancom.systems.stomp.core.wire.frame.UnsubscribeFrame;
 import lombok.Getter;

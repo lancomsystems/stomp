@@ -16,14 +16,14 @@ import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import de.lancom.systems.defer.DeferredFactory;
+import de.lancom.systems.defer.Promise;
+import de.lancom.systems.defer.callback.ExecutorCallback;
 import de.lancom.systems.stomp.core.connection.StompConnection;
 import de.lancom.systems.stomp.core.connection.StompFrameAwaitJob;
 import de.lancom.systems.stomp.core.connection.StompFrameContext;
 import de.lancom.systems.stomp.core.connection.StompFrameTransmitJob;
 import de.lancom.systems.stomp.core.connection.StompSubscription;
-import de.lancom.systems.stomp.core.promise.DeferredFactory;
-import de.lancom.systems.stomp.core.promise.Promise;
-import de.lancom.systems.stomp.core.promise.callback.ExecutorCallback;
 import de.lancom.systems.stomp.core.util.NamedDaemonThreadFactory;
 import de.lancom.systems.stomp.core.wire.StompAction;
 import de.lancom.systems.stomp.core.wire.StompFrame;
