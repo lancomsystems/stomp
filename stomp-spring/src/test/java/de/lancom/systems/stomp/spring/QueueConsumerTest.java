@@ -7,22 +7,22 @@ import static org.junit.Assert.assertTrue;
 
 import java.util.concurrent.TimeUnit;
 
-import de.lancom.systems.stomp.core.client.StompClient;
-import de.lancom.systems.stomp.core.client.StompUrl;
-import de.lancom.systems.stomp.core.connection.StompFrameContextInterceptors;
-import de.lancom.systems.stomp.core.wire.StompAckMode;
-import de.lancom.systems.stomp.core.wire.StompData;
-import de.lancom.systems.stomp.core.wire.StompFrame;
-import de.lancom.systems.stomp.core.wire.frame.SendFrame;
-import de.lancom.systems.stomp.spring.annotation.Subscription;
-import de.lancom.systems.stomp.test.AsyncHolder;
-import lombok.extern.slf4j.Slf4j;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.env.Environment;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
+
+import de.lancom.systems.stomp.core.client.StompClient;
+import de.lancom.systems.stomp.core.client.StompUrl;
+import de.lancom.systems.stomp.core.connection.StompFrameContextInterceptors;
+import de.lancom.systems.stomp.core.wire.StompAckMode;
+import de.lancom.systems.stomp.core.wire.StompFrame;
+import de.lancom.systems.stomp.core.wire.frame.SendFrame;
+import de.lancom.systems.stomp.spring.annotation.Subscription;
+import de.lancom.systems.stomp.test.AsyncHolder;
+import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 @ContextConfiguration(classes = TestConfiguration.class)
@@ -45,17 +45,20 @@ public class QueueConsumerTest {
     @Autowired
     private StompClient client;
 
-    @Subscription(value = URL_QUEUE_ACK, ackMode = StompAckMode.CLIENT_INDIVIDUAL)
+    @Subscription(value = URL_QUEUE_ACK,
+                  ackMode = StompAckMode.CLIENT_INDIVIDUAL)
     public boolean processQueueFrame1(final StompFrame frame) {
         return true;
     }
 
-    @Subscription(value = URL_QUEUE_NACK, ackMode = StompAckMode.CLIENT_INDIVIDUAL)
+    @Subscription(value = URL_QUEUE_NACK,
+                  ackMode = StompAckMode.CLIENT_INDIVIDUAL)
     public boolean processQueueFrame2(final String body) {
         return false;
     }
 
-    @Subscription(value = URL_QUEUE_CUSTOM, ackMode = StompAckMode.CLIENT_INDIVIDUAL)
+    @Subscription(value = URL_QUEUE_CUSTOM,
+                  ackMode = StompAckMode.CLIENT_INDIVIDUAL)
     public boolean processQueueFrame3(final CustomData data) {
         QUEUE_HOLDER_CUSTOM.set(data);
         return true;
@@ -124,23 +127,5 @@ public class QueueConsumerTest {
         assertThat(QUEUE_HOLDER_CUSTOM.getCount(), is(1));
         assertThat(QUEUE_HOLDER_CUSTOM.get().getCustom(), is(equalTo("Test")));
 
-    }
-
-
-    public static class CustomData extends StompData {
-        public CustomData() {
-        }
-
-        public CustomData(final String custom) {
-            this.setCustom(custom);
-        }
-
-        public String getCustom() {
-            return this.getHeader("custom");
-        }
-
-        public void setCustom(final String custom) {
-            this.setHeader("custom", custom);
-        }
     }
 }

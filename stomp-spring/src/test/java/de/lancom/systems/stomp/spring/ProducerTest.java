@@ -8,6 +8,13 @@ import java.nio.charset.StandardCharsets;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.env.Environment;
+import org.springframework.test.context.ContextConfiguration;
+import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
+
 import de.lancom.systems.stomp.core.client.StompClient;
 import de.lancom.systems.stomp.core.client.StompUrl;
 import de.lancom.systems.stomp.core.connection.StompFrameContextInterceptor;
@@ -17,12 +24,6 @@ import de.lancom.systems.stomp.core.wire.frame.SendFrame;
 import de.lancom.systems.stomp.spring.annotation.Destination;
 import de.lancom.systems.stomp.test.AsyncHolder;
 import lombok.extern.slf4j.Slf4j;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.core.env.Environment;
-import org.springframework.test.context.ContextConfiguration;
-import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
 @Slf4j
 @ContextConfiguration(classes = TestConfiguration.class)
@@ -48,6 +49,9 @@ public class ProducerTest {
     @Destination(URL)
     private StompProducer<byte[]> producer3;
 
+    @Destination(URL)
+    private StompProducer<CustomData> producer4;
+
     @Test
     public void produceFrame() {
         final StompUrl url = StompUrl.parse(environment.resolvePlaceholders(URL));
@@ -57,7 +61,7 @@ public class ProducerTest {
         final SendFrame sendFrame = new SendFrame();
         sendFrame.setBodyAsString("Test1");
 
-        client.addInterceptor(createSendInterceptor(holder::set, url.getDestination()));
+        client.addInterceptor(createBodyInterceptor(holder::set, url.getDestination()));
 
         assertTrue(
                 "Send failed",
@@ -77,7 +81,7 @@ public class ProducerTest {
         sendFrame.setBodyAsString("Test2");
         sendFrame.setDestination("/topic/7f0b8579-afac-4173-a721-058c253fc0c6");
 
-        client.addInterceptor(createSendInterceptor(holder::set, sendFrame.getDestination()));
+        client.addInterceptor(createBodyInterceptor(holder::set, sendFrame.getDestination()));
 
         assertTrue(
                 "Send failed",
@@ -93,7 +97,7 @@ public class ProducerTest {
         final StompUrl url = StompUrl.parse(environment.resolvePlaceholders(URL));
         final AsyncHolder<String> holder = AsyncHolder.create();
 
-        client.addInterceptor(createSendInterceptor(holder::set, url.getDestination()));
+        client.addInterceptor(createBodyInterceptor(holder::set, url.getDestination()));
 
         assertTrue(
                 "Send failed",
@@ -109,7 +113,7 @@ public class ProducerTest {
         final StompUrl url = StompUrl.parse(environment.resolvePlaceholders(URL));
         final AsyncHolder<String> holder = AsyncHolder.create();
 
-        client.addInterceptor(createSendInterceptor(holder::set, url.getDestination()));
+        client.addInterceptor(createBodyInterceptor(holder::set, url.getDestination()));
 
         assertTrue(
                 "Send failed",
@@ -120,14 +124,42 @@ public class ProducerTest {
 
     }
 
-    private StompFrameContextInterceptor createSendInterceptor(
+    @Test
+    public void produceStompData() {
+        final StompUrl url = StompUrl.parse(environment.resolvePlaceholders(URL));
+        final AsyncHolder<String> holder = AsyncHolder.create();
+
+        client.addInterceptor(createHeaderInterceptor(holder::set, "custom", url.getDestination()));
+
+        assertTrue(
+                "Send failed",
+                producer4.send(new CustomData("Test5")).await(WAIT_SECONDS, TimeUnit.SECONDS)
+        );
+
+        assertThat(holder.get(1, WAIT_SECONDS, TimeUnit.SECONDS), is("Test5"));
+
+    }
+
+    private StompFrameContextInterceptor createBodyInterceptor(
             final Consumer<String> consumer,
             final String destination
     ) {
         return StompFrameContextInterceptors.builder()
                 .hasAction("SEND")
-                .hasHeader(StompHeader.DESTINATION.value(), destination)
+                .hasHeader(StompHeader.DESTINATION.value(), destination::equals)
                 .bodyAsString(consumer)
+                .build();
+    }
+
+    private StompFrameContextInterceptor createHeaderInterceptor(
+            final Consumer<String> consumer,
+            final String name,
+            final String destination
+    ) {
+        return StompFrameContextInterceptors.builder()
+                .hasAction("SEND")
+                .hasHeader(StompHeader.DESTINATION.value(), destination::equals)
+                .frame(f -> consumer.accept(f.getHeader("custom")))
                 .build();
     }
 
