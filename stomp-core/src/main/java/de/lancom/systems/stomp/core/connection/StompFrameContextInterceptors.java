@@ -2,8 +2,8 @@ package de.lancom.systems.stomp.core.connection;
 
 import java.util.Collection;
 import java.util.Map;
-import java.util.Objects;
 import java.util.function.Consumer;
+import java.util.function.Function;
 
 import de.lancom.systems.stomp.core.client.StompUrl;
 import de.lancom.systems.stomp.core.wire.StompFrame;
@@ -21,8 +21,8 @@ public class StompFrameContextInterceptors implements StompFrameContextIntercept
     @Singular
     private final Collection<String> hasActions;
     @Singular
-    private final Map<String, String> hasHeaders;
-    private final Map<String, String> hasParameters;
+    private final Map<String, Function<String, Boolean>> hasHeaders;
+    private final Map<String, Function<String, Boolean>> hasParameters;
     private final Consumer<String> bodyAsString;
     private final Consumer<byte[]> body;
     private final Consumer<String> action;
@@ -50,7 +50,7 @@ public class StompFrameContextInterceptors implements StompFrameContextIntercept
      * Create a new body interceptor for the given actions.
      *
      * @param consumer consumer
-     * @param actions actions
+     * @param actions  actions
      * @return interceptor
      */
     public static StompFrameContextInterceptors bodyAsString(
@@ -62,9 +62,9 @@ public class StompFrameContextInterceptors implements StompFrameContextIntercept
     /**
      * Create a new body interceptor for the given url and actions.
      *
-     * @param url url
+     * @param url      url
      * @param consumer consumer
-     * @param actions actions
+     * @param actions  actions
      * @return interceptor
      */
     public static StompFrameContextInterceptors bodyAsString(
@@ -81,7 +81,7 @@ public class StompFrameContextInterceptors implements StompFrameContextIntercept
      * Create a new body interceptor for the given url and actions.
      *
      * @param consumer consumer
-     * @param actions actions
+     * @param actions  actions
      * @return interceptor
      */
     public static StompFrameContextInterceptors body(
@@ -93,9 +93,9 @@ public class StompFrameContextInterceptors implements StompFrameContextIntercept
     /**
      * Create a new body interceptor for the given url and actions.
      *
-     * @param url url
+     * @param url      url
      * @param consumer consumer
-     * @param actions actions
+     * @param actions  actions
      * @return interceptor
      */
     public static StompFrameContextInterceptors body(
@@ -118,14 +118,14 @@ public class StompFrameContextInterceptors implements StompFrameContextIntercept
         }
 
         if (hasParameters != null) {
-            for (final Map.Entry<String, String> entry : hasParameters.entrySet()) {
-                handle = handle && Objects.equals(context.getParameter(entry.getKey()), entry.getValue());
+            for (final Map.Entry<String, Function<String, Boolean>> entry : hasParameters.entrySet()) {
+                handle = handle && entry.getValue().apply(context.getParameter(entry.getKey()));
             }
         }
 
         if (hasHeaders != null) {
-            for (final Map.Entry<String, String> entry : hasHeaders.entrySet()) {
-                handle = handle && Objects.equals(contextFrame.getHeader(entry.getKey()), entry.getValue());
+            for (final Map.Entry<String, Function<String, Boolean>> entry : hasHeaders.entrySet()) {
+                handle = handle && entry.getValue().apply(context.getFrame().getHeader(entry.getKey()));
             }
         }
 
