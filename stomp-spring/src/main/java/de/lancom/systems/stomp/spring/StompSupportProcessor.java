@@ -11,20 +11,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
-import org.springframework.beans.BeansException;
-import org.springframework.beans.PropertyValues;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.config.DestructionAwareBeanPostProcessor;
-import org.springframework.beans.factory.config.InstantiationAwareBeanPostProcessor;
-import org.springframework.beans.factory.support.MergedBeanDefinitionPostProcessor;
-import org.springframework.beans.factory.support.RootBeanDefinition;
-import org.springframework.context.EmbeddedValueResolverAware;
-import org.springframework.core.BridgeMethodResolver;
-import org.springframework.util.ClassUtils;
-import org.springframework.util.ReflectionUtils;
-import org.springframework.util.StringUtils;
-import org.springframework.util.StringValueResolver;
-
 import de.lancom.systems.stomp.core.client.StompClient;
 import de.lancom.systems.stomp.core.client.StompUrl;
 import de.lancom.systems.stomp.core.connection.StompFrameContextHandler;
@@ -42,6 +28,21 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.BeansException;
+import org.springframework.beans.PropertyValues;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.config.ConfigurableBeanFactory;
+import org.springframework.beans.factory.config.DestructionAwareBeanPostProcessor;
+import org.springframework.beans.factory.config.InstantiationAwareBeanPostProcessor;
+import org.springframework.beans.factory.support.MergedBeanDefinitionPostProcessor;
+import org.springframework.beans.factory.support.RootBeanDefinition;
+import org.springframework.context.ApplicationContext;
+import org.springframework.context.ApplicationContextAware;
+import org.springframework.context.ConfigurableApplicationContext;
+import org.springframework.core.BridgeMethodResolver;
+import org.springframework.util.ClassUtils;
+import org.springframework.util.ReflectionUtils;
+import org.springframework.util.StringUtils;
 
 /**
  * Handles injection of {@link StompProducer} and creates subscriptions.
@@ -52,14 +53,14 @@ public class StompSupportProcessor implements
         MergedBeanDefinitionPostProcessor,
         InstantiationAwareBeanPostProcessor,
         DestructionAwareBeanPostProcessor,
-        EmbeddedValueResolverAware {
+        ApplicationContextAware {
 
     private final Map<String, StompBeanInformation> informationCache = new HashMap<>();
 
     @Autowired
     private StompClient client;
 
-    private StringValueResolver resolver;
+    private ConfigurableBeanFactory beanFactory;
 
     @Override
     public Object postProcessBeforeInitialization(final Object bean, final String beanName) throws BeansException {
@@ -69,13 +70,6 @@ public class StompSupportProcessor implements
     @Override
     public Object postProcessAfterInitialization(final Object bean, final String beanName) throws BeansException {
         return bean;
-    }
-
-    @Override
-    public void setEmbeddedValueResolver(
-            final StringValueResolver valueResolver
-    ) {
-        this.resolver = valueResolver;
     }
 
     @Override
@@ -103,7 +97,7 @@ public class StompSupportProcessor implements
      * Lookup bean information.
      *
      * @param beanClass bean class
-     * @param beanName  bean name
+     * @param beanName bean name
      * @return information
      */
     private StompBeanInformation findBeanInformation(
@@ -124,7 +118,7 @@ public class StompSupportProcessor implements
                 final Destination annotation = field.getAnnotation(Destination.class);
 
                 if (contentType == StompProducer.class && annotation != null) {
-                    final StompUrl url = StompUrl.parse(resolver.resolveStringValue(annotation.value()));
+                    final StompUrl url = StompUrl.parse(beanFactory.resolveEmbeddedValue(annotation.value()));
                     information.getProducers().add(new StompBeanProducer(
                             field,
                             url
@@ -142,8 +136,8 @@ public class StompSupportProcessor implements
 
                 if (use) {
                     final Subscription annotation = bridgedMethod.getAnnotation(Subscription.class);
-                    final StompUrl url = StompUrl.parse(resolver.resolveStringValue(annotation.value()));
-                    final String id = resolver.resolveStringValue(annotation.id());
+                    final StompUrl url = StompUrl.parse(beanFactory.resolveEmbeddedValue(annotation.value()));
+                    final String id = beanFactory.resolveEmbeddedValue(annotation.id());
 
                     information.getConsumers().add(new StompBeanConsumer(
                             method,
@@ -179,13 +173,6 @@ public class StompSupportProcessor implements
 
     @Override
     public boolean postProcessAfterInstantiation(final Object bean, final String beanName) throws BeansException {
-        return true;
-    }
-
-    @Override
-    public PropertyValues postProcessPropertyValues(
-            final PropertyValues pvs, final PropertyDescriptor[] pds, final Object bean, final String beanName
-    ) throws BeansException {
         final StompBeanInformation information = this.findBeanInformation(bean.getClass(), beanName);
         if (information != null) {
             for (final StompBeanProducer producer : information.getProducers()) {
@@ -195,7 +182,20 @@ public class StompSupportProcessor implements
                 consumer.apply(client, bean);
             }
         }
+        return true;
+    }
+
+    @Override
+    public PropertyValues postProcessPropertyValues(
+            final PropertyValues pvs, final PropertyDescriptor[] pds, final Object bean, final String beanName
+    ) throws BeansException {
         return pvs;
+    }
+
+    @Override
+    public void setApplicationContext(final ApplicationContext applicationContext) throws BeansException {
+        final ConfigurableApplicationContext context = (ConfigurableApplicationContext) applicationContext;
+        this.beanFactory = context.getBeanFactory();
     }
 
     /**
@@ -219,7 +219,7 @@ public class StompSupportProcessor implements
          * Apply producer to bean.
          *
          * @param client stomp client
-         * @param bean   bean
+         * @param bean bean
          */
         public void apply(final StompClient client, final Object bean) {
             ReflectionUtils.makeAccessible(field);
@@ -248,7 +248,7 @@ public class StompSupportProcessor implements
          * Apply consumer to bean.
          *
          * @param client stomp client
-         * @param bean   bean
+         * @param bean bean
          */
         public void apply(final StompClient client, final Object bean) {
             final Class[] parameterTypes = method.getParameterTypes();
@@ -312,41 +312,41 @@ public class StompSupportProcessor implements
         @Override
         public Object invoke(final Object proxy, final Method method, final Object[] args) throws Throwable {
             switch (method.getName()) {
-            case "send": {
-                final Object value = args[0];
+                case "send": {
+                    final Object value = args[0];
 
-                if (value != null) {
-                    final SendFrame sendFrame;
-                    if (value instanceof SendFrame) {
-                        sendFrame = (SendFrame) value;
-                    } else {
-                        sendFrame = new SendFrame();
-                        if (value instanceof StompData) {
-                            StompData.class.cast(value).copy(sendFrame);
-                        } else if (value instanceof String) {
-                            sendFrame.setBodyAsString((String) value);
-                        } else if (value instanceof byte[]) {
-                            sendFrame.setBody((byte[]) value);
+                    if (value != null) {
+                        final SendFrame sendFrame;
+                        if (value instanceof SendFrame) {
+                            sendFrame = (SendFrame) value;
                         } else {
-                            throw new RuntimeException(String.format(
-                                    "Send body of type %s is not supported",
-                                    value.getClass()
-                            ));
+                            sendFrame = new SendFrame();
+                            if (value instanceof StompData) {
+                                StompData.class.cast(value).copy(sendFrame);
+                            } else if (value instanceof String) {
+                                sendFrame.setBodyAsString((String) value);
+                            } else if (value instanceof byte[]) {
+                                sendFrame.setBody((byte[]) value);
+                            } else {
+                                throw new RuntimeException(String.format(
+                                        "Send body of type %s is not supported",
+                                        value.getClass()
+                                ));
+                            }
                         }
-                    }
 
-                    if (sendFrame.getHeader(StompHeader.DESTINATION) == null) {
-                        sendFrame.setDestination(url.getDestination());
+                        if (sendFrame.getHeader(StompHeader.DESTINATION) == null) {
+                            sendFrame.setDestination(url.getDestination());
+                        }
+                        return client.transmitFrame(url, sendFrame);
                     }
-                    return client.transmitFrame(url, sendFrame);
                 }
-            }
-            case "toString": {
-                return String.format("Stomp Producer for '%s'", url);
-            }
-            default: {
-                throw new UnsupportedOperationException(String.format("Method %s is not implemented ", method));
-            }
+                case "toString": {
+                    return String.format("Stomp Producer for '%s'", url);
+                }
+                default: {
+                    throw new UnsupportedOperationException(String.format("Method %s is not implemented ", method));
+                }
             }
         }
     }
