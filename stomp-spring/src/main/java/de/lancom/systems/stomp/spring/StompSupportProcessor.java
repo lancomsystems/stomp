@@ -285,19 +285,24 @@ public class StompSupportProcessor implements
             final Object[] parameters = new Object[parameterTypes.length];
             final StompFrameContextHandler handler = (c) -> {
                 final StompFrame frame = c.getFrame();
-                for (int index = 0; index < parameterTypes.length; index++) {
-                    final Class type = parameterTypes[index];
-                    if (type.isAssignableFrom(frame.getClass())) {
-                        parameters[index] = frame;
-                    } else if (StompData.class.isAssignableFrom(type)) {
-                        parameters[index] = frame.copy(type);
-                    } else if (type == String.class) {
-                        parameters[index] = frame.getBodyAsString();
-                    } else if (type == byte[].class) {
-                        parameters[index] = frame.getBody();
-                    } else {
-                        parameters[index] = c.getParameter(type);
+                try {
+                    for (int index = 0; index < parameterTypes.length; index++) {
+                        final Class type = parameterTypes[index];
+                        if (type.isAssignableFrom(frame.getClass())) {
+                            parameters[index] = frame;
+                        } else if (StompData.class.isAssignableFrom(type)) {
+                            parameters[index] = frame.copy(type);
+                        } else if (type == String.class) {
+                            parameters[index] = frame.getBodyAsString();
+                        } else if (type == byte[].class) {
+                            parameters[index] = frame.getBody();
+                        } else {
+                            parameters[index] = c.getParameter(type);
+                        }
                     }
+                } catch (final Exception e) {
+                    log.warn("Exception while handling frame: '{}'", e.getMessage());
+                    throw (e);
                 }
 
                 try {
