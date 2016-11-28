@@ -300,7 +300,7 @@ public class StompSupportProcessor implements
                             parameters[index] = c.getParameter(type);
                         }
                     }
-                } catch (Exception e) {
+                } catch (final Exception e) {
                     log.warn("Exception while handling frame: '{}'", e.getMessage());
                     throw (e);
                 }
