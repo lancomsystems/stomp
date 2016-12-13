@@ -16,7 +16,7 @@ public class StompBroker {
     private BrokerService brokerService;
 
     @Getter
-    @Value("${embedded.broker.port}")
+    @Value("${broker.port}")
     private int port = 0;
 
     private AtomicBoolean running = new AtomicBoolean(false);

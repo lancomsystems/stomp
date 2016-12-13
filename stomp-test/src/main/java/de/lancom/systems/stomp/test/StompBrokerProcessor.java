@@ -29,10 +29,10 @@ public class StompBrokerProcessor implements BeanPostProcessor, InitializingBean
     @Override
     public void afterPropertiesSet() throws Exception {
         final Map<String, Object> properties = new HashMap<>();
-        properties.put("embedded.broker.port", broker.getPort());
-        properties.put("embedded.broker.url", "stomp://localhost:${embedded.broker.port}");
+        properties.put("broker.port", broker.getPort());
+        properties.put("broker.url", "stomp://localhost:${broker.port}");
 
-        environment.getPropertySources().addFirst(new MapPropertySource("embedded.broker", properties));
+        environment.getPropertySources().addFirst(new MapPropertySource("broker", properties));
 
         broker.start();
 

@@ -29,7 +29,7 @@ public class TopicConsumerTest {
 
     private static final int WAIT_SECONDS = 5;
 
-    private static final String URL_TOPIC = "${embedded.broker.url}/topic/645f7e02-17f8-4b6e-baf4-b43b55a74784";
+    private static final String URL_TOPIC = "${broker.url}/topic/645f7e02-17f8-4b6e-baf4-b43b55a74784";
 
     private static final AsyncHolder<String> TOPIC_HOLDER_GENERAL = AsyncHolder.create();
     private static final AsyncHolder<String> TOPIC_HOLDER_A = AsyncHolder.create();
