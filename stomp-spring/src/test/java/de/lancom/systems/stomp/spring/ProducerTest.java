@@ -32,7 +32,7 @@ public class ProducerTest {
 
     private static final int WAIT_SECONDS = 5;
 
-    private static final String URL = "${embedded.broker.url}/topic/ff550add-01ca-4181-97dc-6c64457cdf57";
+    private static final String URL = "${broker.url}/topic/ff550add-01ca-4181-97dc-6c64457cdf57";
 
     @Autowired
     private Environment environment;

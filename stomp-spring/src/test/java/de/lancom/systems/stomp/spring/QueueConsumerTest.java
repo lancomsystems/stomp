@@ -31,9 +31,9 @@ public class QueueConsumerTest {
 
     private static final int WAIT_SECONDS = 5;
 
-    private static final String URL_QUEUE_ACK = "${embedded.broker.url}/queue/f9c786bf-9553-4538-bc6f-a87177c6c67d";
-    private static final String URL_QUEUE_NACK = "${embedded.broker.url}/queue/f196be8b-4d58-434a-bd33-20ab259d26d7";
-    private static final String URL_QUEUE_CUSTOM = "${embedded.broker.url}/queue/1e060cb9-5779-4d1b-8829-afc732bb0b67";
+    private static final String URL_QUEUE_ACK = "${broker.url}/queue/f9c786bf-9553-4538-bc6f-a87177c6c67d";
+    private static final String URL_QUEUE_NACK = "${broker.url}/queue/f196be8b-4d58-434a-bd33-20ab259d26d7";
+    private static final String URL_QUEUE_CUSTOM = "${broker.url}/queue/1e060cb9-5779-4d1b-8829-afc732bb0b67";
 
     private static final AsyncHolder<String> QUEUE_HOLDER_ACK = AsyncHolder.create();
     private static final AsyncHolder<String> QUEUE_HOLDER_NACK = AsyncHolder.create();
