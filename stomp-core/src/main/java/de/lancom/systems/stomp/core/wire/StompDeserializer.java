@@ -99,14 +99,7 @@ public class StompDeserializer {
                 reader.discardEmptyLines();
 
                 buffer.limit(buffer.position());
-                if (reader.getPosition() <= buffer.limit()) {
-                    buffer.position(reader.getPosition());
-                } else {
-                    log.debug("Unable to apply new buffer position ({} > {}). Body: ",
-                            reader.getPosition(),
-                            buffer.limit());
-                }
-
+                buffer.position(Math.min(reader.getPosition(), buffer.limit()));
                 buffer.compact();
 
                 reader.reset();
