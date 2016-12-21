@@ -75,7 +75,7 @@ public class TopicConsumerTest {
                   ackMode = StompAckMode.AUTO)
     public void processTopicFrameBig(final StompFrame frame) {
         System.out.println("big");
-        TOPIC_HOLDER_B.set(frame.getBodyAsString());
+        TOPIC_HOLDER_BIG.set(frame.getBodyAsString());
     }
 
     @Before
