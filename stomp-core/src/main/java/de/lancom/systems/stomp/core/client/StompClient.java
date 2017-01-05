@@ -267,7 +267,7 @@ public class StompClient {
      *
      * @param target target
      */
-    public void removeIntercetor(final StompFrameContextInterceptor target) {
+    public void removeInterceptor(final StompFrameContextInterceptor target) {
         for (final StompFrameContextInterceptor interceptor : interceptors) {
             if (Objects.equals(interceptor, target)) {
                 interceptors.remove(interceptor);
@@ -280,7 +280,7 @@ public class StompClient {
      *
      * @param interceptorClass interceptorDelegator class
      */
-    public void removeIntercetor(final Class<? extends StompFrameContextInterceptor> interceptorClass) {
+    public void removeInterceptor(final Class<? extends StompFrameContextInterceptor> interceptorClass) {
         for (final StompFrameContextInterceptor interceptor : interceptors) {
             if (interceptorClass.isAssignableFrom(interceptor.getClass())) {
                 interceptors.remove(interceptor);
@@ -310,4 +310,5 @@ public class StompClient {
             connection.close();
         }
     }
+
 }

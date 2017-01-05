@@ -1,5 +1,5 @@
 group 'de.lancom.systems.stomp'
-version '0.1.8'
+version '0.1.10'
 
 subprojects {
     group rootProject.group

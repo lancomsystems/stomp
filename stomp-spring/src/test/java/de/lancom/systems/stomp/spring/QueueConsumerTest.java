@@ -7,14 +7,6 @@ import static org.junit.Assert.assertTrue;
 
 import java.util.concurrent.TimeUnit;
 
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.core.env.Environment;
-import org.springframework.test.context.ContextConfiguration;
-import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
-
-import de.lancom.systems.stomp.core.client.StompClient;
 import de.lancom.systems.stomp.core.client.StompUrl;
 import de.lancom.systems.stomp.core.connection.StompFrameContextInterceptors;
 import de.lancom.systems.stomp.core.wire.StompAckMode;
@@ -22,47 +14,28 @@ import de.lancom.systems.stomp.core.wire.StompFrame;
 import de.lancom.systems.stomp.core.wire.frame.SendFrame;
 import de.lancom.systems.stomp.spring.annotation.Subscription;
 import de.lancom.systems.stomp.test.AsyncHolder;
-import lombok.extern.slf4j.Slf4j;
+import org.junit.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.env.Environment;
+import org.springframework.stereotype.Component;
+import org.springframework.test.context.ContextConfiguration;
 
-@Slf4j
-@ContextConfiguration(classes = TestConfiguration.class)
-@RunWith(SpringJUnit4ClassRunner.class)
-public class QueueConsumerTest {
+@ContextConfiguration(classes = { TestConfiguration.class, QueueConsumerTest.TestBed.class})
+public class QueueConsumerTest extends BaseTest {
+
+    public static final String URL_QUEUE_ACK = "${broker.url}/queue/f9c786bf-9553-4538-bc6f-a87177c6c67d";
+    public static final String URL_QUEUE_NACK = "${broker.url}/queue/f196be8b-4d58-434a-bd33-20ab259d26d7";
+    public static final String URL_QUEUE_CUSTOM = "${broker.url}/queue/1e060cb9-5779-4d1b-8829-afc732bb0b67";
 
     private static final int WAIT_SECONDS = 5;
 
-    private static final String URL_QUEUE_ACK = "${broker.url}/queue/f9c786bf-9553-4538-bc6f-a87177c6c67d";
-    private static final String URL_QUEUE_NACK = "${broker.url}/queue/f196be8b-4d58-434a-bd33-20ab259d26d7";
-    private static final String URL_QUEUE_CUSTOM = "${broker.url}/queue/1e060cb9-5779-4d1b-8829-afc732bb0b67";
-
-    private static final AsyncHolder<String> QUEUE_HOLDER_ACK = AsyncHolder.create();
-    private static final AsyncHolder<String> QUEUE_HOLDER_NACK = AsyncHolder.create();
-    private static final AsyncHolder<CustomData> QUEUE_HOLDER_CUSTOM = AsyncHolder.create();
+    private static boolean interceptorAdded;
 
     @Autowired
     private Environment environment;
 
     @Autowired
-    private StompClient client;
-
-    @Subscription(value = URL_QUEUE_ACK,
-                  ackMode = StompAckMode.CLIENT_INDIVIDUAL)
-    public boolean processQueueFrame1(final StompFrame frame) {
-        return true;
-    }
-
-    @Subscription(value = URL_QUEUE_NACK,
-                  ackMode = StompAckMode.CLIENT_INDIVIDUAL)
-    public boolean processQueueFrame2(final String body) {
-        return false;
-    }
-
-    @Subscription(value = URL_QUEUE_CUSTOM,
-                  ackMode = StompAckMode.CLIENT_INDIVIDUAL)
-    public boolean processQueueFrame3(final CustomData data) {
-        QUEUE_HOLDER_CUSTOM.set(data);
-        return true;
-    }
+    private TestBed testBed;
 
     @Test
     public void consumeQueueAck() throws Exception {
@@ -73,7 +46,7 @@ public class QueueConsumerTest {
                         .builder()
                         .hasUrl(url)
                         .hasAction("ACK")
-                        .bodyAsString(QUEUE_HOLDER_ACK::set)
+                        .bodyAsString(testBed.queueHolderAck::set)
                         .build()
         );
 
@@ -84,8 +57,8 @@ public class QueueConsumerTest {
                 client.transmitFrame(url, sendFrame).await(WAIT_SECONDS, TimeUnit.SECONDS)
         );
 
-        assertTrue(QUEUE_HOLDER_ACK.expect(1, WAIT_SECONDS, TimeUnit.SECONDS));
-        assertThat(QUEUE_HOLDER_ACK.getCount(), is(1));
+        assertTrue(testBed.queueHolderAck.expect(1, WAIT_SECONDS, TimeUnit.SECONDS));
+        assertThat(testBed.queueHolderAck.getCount(), is(1));
 
     }
 
@@ -98,7 +71,7 @@ public class QueueConsumerTest {
                         .builder()
                         .hasUrl(url)
                         .hasAction("NACK")
-                        .bodyAsString(QUEUE_HOLDER_NACK::set)
+                        .bodyAsString(testBed.queueHolderNack::set)
                         .build()
         );
 
@@ -109,8 +82,8 @@ public class QueueConsumerTest {
                 client.transmitFrame(url, sendFrame).await(WAIT_SECONDS, TimeUnit.SECONDS)
         );
 
-        assertTrue(QUEUE_HOLDER_NACK.expect(1, WAIT_SECONDS, TimeUnit.SECONDS));
-        assertThat(QUEUE_HOLDER_NACK.getCount(), is(1));
+        assertTrue(testBed.queueHolderNack.expect(1, WAIT_SECONDS, TimeUnit.SECONDS));
+        assertThat(testBed.queueHolderNack.getCount(), is(1));
 
     }
 
@@ -123,9 +96,35 @@ public class QueueConsumerTest {
                 client.send(url, new CustomData("Test")).await(WAIT_SECONDS, TimeUnit.SECONDS)
         );
 
-        assertTrue(QUEUE_HOLDER_CUSTOM.expect(1, WAIT_SECONDS, TimeUnit.SECONDS));
-        assertThat(QUEUE_HOLDER_CUSTOM.getCount(), is(1));
-        assertThat(QUEUE_HOLDER_CUSTOM.get().getCustom(), is(equalTo("Test")));
+        System.out.println(this);
+        assertTrue(testBed.queueHolderCustom.expect(1, WAIT_SECONDS, TimeUnit.SECONDS));
+        assertThat(testBed.queueHolderCustom.getCount(), is(1));
+        assertThat(testBed.queueHolderCustom.get().getCustom(), is(equalTo("Test")));
 
+    }
+
+    @Component
+    public static class TestBed {
+
+        public final AsyncHolder<String> queueHolderAck = AsyncHolder.create();
+        public final AsyncHolder<String> queueHolderNack = AsyncHolder.create();
+        public final AsyncHolder<CustomData> queueHolderCustom = AsyncHolder.create();
+
+        @Subscription(value = URL_QUEUE_ACK, ackMode = StompAckMode.CLIENT_INDIVIDUAL)
+        public boolean processQueueFrame1(final StompFrame frame) {
+            return true;
+        }
+
+        @Subscription(value = URL_QUEUE_NACK, ackMode = StompAckMode.CLIENT_INDIVIDUAL)
+        public boolean processQueueFrame2(final String body) {
+            return false;
+        }
+
+        @Subscription(value = URL_QUEUE_CUSTOM, ackMode = StompAckMode.CLIENT_INDIVIDUAL)
+        public boolean processQueueFrame3(final CustomData data) {
+            this.queueHolderCustom.set(data);
+            System.out.println(this);
+            return true;
+        }
     }
 }

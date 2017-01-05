@@ -4,7 +4,9 @@ import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
 
+import de.lancom.systems.stomp.core.util.EnumValue;
 import lombok.Getter;
+import lombok.NonNull;
 
 /**
  * Base class for stomp frame data.
@@ -103,32 +105,32 @@ public class StompData {
     }
 
     /**
-     * Get header value using {@link StompHeader}.
+     * Get header value using {@link EnumValue<String>}.
      *
      * @param header header
      * @return value
      */
-    public String getHeader(final StompHeader header) {
+    public String getHeader(@NonNull final EnumValue<String> header) {
         return getHeader(header.value());
     }
 
     /**
-     * Set header using {@link StompHeader}.
+     * Set header using {@link EnumValue<String>}.
      *
      * @param header header
      * @param value value
      */
-    public void setHeader(final StompHeader header, final String value) {
+    public void setHeader(@NonNull final EnumValue<String> header, final String value) {
         this.setHeader(header.value(), value);
     }
 
     /**
-     * Check wether this frame has the given header.
+     * Check whether this frame has the given header.
      *
      * @param header header
      * @return header available
      */
-    public boolean hasHeader(final StompHeader header) {
+    public boolean hasHeader(@NonNull final EnumValue<String> header) {
         return this.getHeaders().containsKey(header.value());
     }
 
@@ -138,7 +140,7 @@ public class StompData {
      * @param header header name
      * @return value
      */
-    public String getHeader(final String header) {
+    public String getHeader(@NonNull final String header) {
         return getHeaders().get(header);
     }
 
@@ -148,18 +150,36 @@ public class StompData {
      * @param header header name
      * @param value value
      */
-    public void setHeader(final String header, final String value) {
+    public void setHeader(@NonNull final String header, final String value) {
         this.getHeaders().put(header, value);
     }
 
     /**
-     * Check wether this frame has the given header.
+     * Check whether this frame has the given header.
      *
      * @param header header
      * @return header available
      */
-    public boolean hasHeader(final String header) {
+    public boolean hasHeader(@NonNull final String header) {
         return this.getHeaders().containsKey(header);
+    }
+
+    /**
+     * Remove header.
+     *
+     * @param header header name
+     */
+    public void removeHeader(@NonNull final String header) {
+        this.getHeaders().remove(header);
+    }
+
+    /**
+     * Remove header using {@link EnumValue<String>}.
+     *
+     * @param header header
+     */
+    public void removeHeader(@NonNull final EnumValue<String> header) {
+        this.getHeaders().remove(header.value());
     }
 
     /**

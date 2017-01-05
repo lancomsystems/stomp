@@ -68,7 +68,11 @@ public enum StompHeader implements EnumValue<String> {
     /**
      * Selector header.
      */
-    SELECTOR("selector");
+    SELECTOR("selector"),
+    /**
+     * Persistence header.
+     */
+    PERSISTENCE("persistent");
 
     private final String value;
 

@@ -66,6 +66,7 @@ public class StompBroker {
             }
 
             this.brokerService = new BrokerService();
+            this.brokerService.setBrokerName("Test" + System.currentTimeMillis());
             this.brokerService.addConnector("stomp+nio://localhost:" + port);
             this.brokerService.setPersistent(false);
             this.brokerService.setAllowTempAutoCreationOnSend(true);
