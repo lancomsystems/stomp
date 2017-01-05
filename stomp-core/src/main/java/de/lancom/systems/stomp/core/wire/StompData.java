@@ -105,7 +105,7 @@ public class StompData {
     }
 
     /**
-     * Get header value using {@link EnumValue<String>}.
+     * Get header value using {@link EnumValue}.
      *
      * @param header header
      * @return value
@@ -115,7 +115,7 @@ public class StompData {
     }
 
     /**
-     * Set header using {@link EnumValue<String>}.
+     * Set header using {@link EnumValue}.
      *
      * @param header header
      * @param value value
@@ -174,7 +174,7 @@ public class StompData {
     }
 
     /**
-     * Remove header using {@link EnumValue<String>}.
+     * Remove header using {@link EnumValue}.
      *
      * @param header header
      */
