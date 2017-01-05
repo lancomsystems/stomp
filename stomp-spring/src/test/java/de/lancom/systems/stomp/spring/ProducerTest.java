@@ -8,13 +8,6 @@ import java.nio.charset.StandardCharsets;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.core.env.Environment;
-import org.springframework.test.context.ContextConfiguration;
-import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
-
 import de.lancom.systems.stomp.core.client.StompClient;
 import de.lancom.systems.stomp.core.client.StompUrl;
 import de.lancom.systems.stomp.core.connection.StompFrameContextInterceptor;
@@ -23,16 +16,18 @@ import de.lancom.systems.stomp.core.wire.StompHeader;
 import de.lancom.systems.stomp.core.wire.frame.SendFrame;
 import de.lancom.systems.stomp.spring.annotation.Destination;
 import de.lancom.systems.stomp.test.AsyncHolder;
-import lombok.extern.slf4j.Slf4j;
+import org.junit.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.env.Environment;
+import org.springframework.stereotype.Component;
+import org.springframework.test.context.ContextConfiguration;
 
-@Slf4j
-@ContextConfiguration(classes = TestConfiguration.class)
-@RunWith(SpringJUnit4ClassRunner.class)
-public class ProducerTest {
+@ContextConfiguration(classes = {TestConfiguration.class, ProducerTest.TestBed.class})
+public class ProducerTest extends BaseTest {
+
+    public static final String URL = "${broker.url}/topic/ff550add-01ca-4181-97dc-6c64457cdf57";
 
     private static final int WAIT_SECONDS = 5;
-
-    private static final String URL = "${broker.url}/topic/ff550add-01ca-4181-97dc-6c64457cdf57";
 
     @Autowired
     private Environment environment;
@@ -40,17 +35,9 @@ public class ProducerTest {
     @Autowired
     private StompClient client;
 
-    @Destination(URL)
-    private StompProducer<SendFrame> producer1;
+    @Autowired
+    private TestBed testBed;
 
-    @Destination(URL)
-    private StompProducer<String> producer2;
-
-    @Destination(URL)
-    private StompProducer<byte[]> producer3;
-
-    @Destination(URL)
-    private StompProducer<CustomData> producer4;
 
     @Test
     public void produceFrame() {
@@ -65,7 +52,7 @@ public class ProducerTest {
 
         assertTrue(
                 "Send failed",
-                producer1.send(sendFrame).await(WAIT_SECONDS, TimeUnit.SECONDS)
+                testBed.producer1.send(sendFrame).await(WAIT_SECONDS, TimeUnit.SECONDS)
         );
 
         assertThat(holder.get(1, WAIT_SECONDS, TimeUnit.SECONDS), is("Test1"));
@@ -85,7 +72,7 @@ public class ProducerTest {
 
         assertTrue(
                 "Send failed",
-                producer1.send(sendFrame).await(WAIT_SECONDS, TimeUnit.SECONDS)
+                testBed.producer1.send(sendFrame).await(WAIT_SECONDS, TimeUnit.SECONDS)
         );
 
         assertThat(holder.get(1, WAIT_SECONDS, TimeUnit.SECONDS), is("Test2"));
@@ -101,7 +88,7 @@ public class ProducerTest {
 
         assertTrue(
                 "Send failed",
-                producer2.send("Test3").await(WAIT_SECONDS, TimeUnit.SECONDS)
+                testBed.producer2.send("Test3").await(WAIT_SECONDS, TimeUnit.SECONDS)
         );
 
         assertThat(holder.get(1, WAIT_SECONDS, TimeUnit.SECONDS), is("Test3"));
@@ -117,7 +104,7 @@ public class ProducerTest {
 
         assertTrue(
                 "Send failed",
-                producer3.send("Test4".getBytes(StandardCharsets.UTF_8)).await(WAIT_SECONDS, TimeUnit.SECONDS)
+                testBed.producer3.send("Test4".getBytes(StandardCharsets.UTF_8)).await(WAIT_SECONDS, TimeUnit.SECONDS)
         );
 
         assertThat(holder.get(1, WAIT_SECONDS, TimeUnit.SECONDS), is("Test4"));
@@ -133,7 +120,7 @@ public class ProducerTest {
 
         assertTrue(
                 "Send failed",
-                producer4.send(new CustomData("Test5")).await(WAIT_SECONDS, TimeUnit.SECONDS)
+                testBed.producer4.send(new CustomData("Test5")).await(WAIT_SECONDS, TimeUnit.SECONDS)
         );
 
         assertThat(holder.get(1, WAIT_SECONDS, TimeUnit.SECONDS), is("Test5"));
@@ -161,6 +148,22 @@ public class ProducerTest {
                 .hasHeader(StompHeader.DESTINATION.value(), destination::equals)
                 .frame(f -> consumer.accept(f.getHeader("custom")))
                 .build();
+    }
+
+    @Component
+    public static class TestBed {
+
+        @Destination(URL)
+        public StompProducer<SendFrame> producer1;
+
+        @Destination(URL)
+        public StompProducer<String> producer2;
+
+        @Destination(URL)
+        public StompProducer<byte[]> producer3;
+
+        @Destination(URL)
+        public StompProducer<CustomData> producer4;
     }
 
 }

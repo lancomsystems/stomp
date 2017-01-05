@@ -130,4 +130,12 @@ public class StompSubscription {
             }
         }
     }
+
+    /**
+     * Remove subscription.
+     */
+    public void remove() {
+        this.unsubscribe();
+        this.connection.removeSubscription(this.getId());
+    }
 }

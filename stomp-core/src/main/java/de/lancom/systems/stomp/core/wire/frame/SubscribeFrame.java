@@ -1,6 +1,7 @@
 package de.lancom.systems.stomp.core.wire.frame;
 
 import de.lancom.systems.stomp.core.util.EnumUtil;
+import de.lancom.systems.stomp.core.wire.StompActiveMqHeader;
 import de.lancom.systems.stomp.core.wire.StompAckMode;
 import de.lancom.systems.stomp.core.wire.StompAction;
 import de.lancom.systems.stomp.core.wire.StompHeader;
@@ -15,6 +16,7 @@ public class SubscribeFrame extends ClientFrame {
      */
     public SubscribeFrame() {
         super(StompAction.SUBSCRIBE.value());
+        this.setPrefetchSize(1);
     }
 
     /**
@@ -126,5 +128,32 @@ public class SubscribeFrame extends ClientFrame {
      */
     public void setSelector(final String selector) {
         this.getHeaders().put(StompHeader.SELECTOR.value(), selector);
+    }
+
+    /**
+     * Set prefetch size.
+     *
+     * @param size size
+     */
+    public void setPrefetchSize(final Integer size) {
+        if (size != null) {
+            this.setHeader(StompActiveMqHeader.PREFETCH_SIZE, size.toString());
+        } else {
+            this.removeHeader(StompActiveMqHeader.PREFETCH_SIZE);
+        }
+    }
+
+    /**
+     * Get prefetch size.
+     *
+     * @return size
+     */
+    public Integer getPrefetchSize() {
+        final String result = this.getHeader(StompActiveMqHeader.PREFETCH_SIZE);
+        if (result != null) {
+            return Integer.valueOf(result);
+        } else {
+            return null;
+        }
     }
 }

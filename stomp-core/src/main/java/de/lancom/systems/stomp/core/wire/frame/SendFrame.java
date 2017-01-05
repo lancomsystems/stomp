@@ -13,6 +13,7 @@ public class SendFrame extends ClientFrame {
      */
     public SendFrame() {
         super(StompAction.SEND.value());
+        this.setPersistence(true);
     }
 
     /**
@@ -63,5 +64,32 @@ public class SendFrame extends ClientFrame {
      */
     public void setDestination(final String destination) {
         this.setHeader(StompHeader.DESTINATION, destination);
+    }
+
+    /**
+     * Get message persistence.
+     *
+     * @return persistence
+     */
+    public Boolean getPersistence() {
+        final String header = this.getHeader(StompHeader.PERSISTENCE);
+        if (header != null) {
+            return header.equals("true");
+        } else {
+            return null;
+        }
+    }
+
+    /**
+     * Set message persistence.
+     *
+     * @param persistence persistence
+     */
+    public void setPersistence(final Boolean persistence) {
+        if (persistence != null) {
+            this.setHeader(StompHeader.PERSISTENCE, persistence.toString());
+        } else {
+            this.removeHeader(StompHeader.PERSISTENCE);
+        }
     }
 }

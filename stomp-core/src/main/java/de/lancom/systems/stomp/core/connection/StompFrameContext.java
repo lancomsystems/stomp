@@ -16,6 +16,7 @@ import lombok.NoArgsConstructor;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
+@SuppressWarnings("unchecked")
 @EqualsAndHashCode(of = "frame")
 public class StompFrameContext {
 

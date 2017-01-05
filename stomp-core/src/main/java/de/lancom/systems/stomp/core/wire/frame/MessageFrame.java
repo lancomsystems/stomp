@@ -68,4 +68,5 @@ public class MessageFrame extends ServerFrame {
     public void setAck(final String ack) {
         this.setHeader(StompHeader.ACK, ack);
     }
+
 }
