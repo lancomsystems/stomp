@@ -14,9 +14,21 @@ subprojects {
 
     def conf = ext
 
+    if (rootProject.findProperty("publishCredentialsFromConfig") == "true"){
+        // If publishCredentialsFromConfig is true, publishUser and publishPassword
+        // are used as identifiers of project properties from which to load
+        // the credentials.
+        // This can be used to fetch this data from ~/.gradle/gradle.properties for
+        // example.
+        def userPropName= rootProject.findProperty("publishUser")
+        def passwordPropName = rootProject.findProperty("publishPassword")
+        conf['publish.user'] = project.properties[userPropName] 
+        conf['publish.password'] = project.properties[passwordPropName] 
+    } else {
+        conf['publish.user'] = rootProject.findProperty("publishUser")
+        conf['publish.password'] = rootProject.findProperty("publishPassword")
+    }
     conf['publish.url'] = rootProject.findProperty("publishUrl") ?: 'sonatype'
-    conf['publish.user'] = rootProject.findProperty("publishUser")
-    conf['publish.password'] = rootProject.findProperty("publishPassword")
     conf['signing.password'] = rootProject.findProperty("signingPassword")
     if (conf['signing.password'] != null) {
         conf['signing.keyId'] = '72819AEA'
