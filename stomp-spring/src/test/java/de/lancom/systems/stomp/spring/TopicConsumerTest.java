@@ -23,7 +23,7 @@ import org.springframework.test.context.ContextConfiguration;
 @ContextConfiguration(classes = { TestConfiguration.class, TopicConsumerTest.TestBed.class})
 public class TopicConsumerTest extends BaseTest {
 
-    private static final int WAIT_SECONDS = 5;
+    private static final int WAIT_SECONDS = 30;
 
     public static final String URL_TOPIC = "${broker.url}/topic/645f7e02-17f8-4b6e-baf4-b43b55a74784";
     public static final String URL_TOPIC_BIG = "${broker.url}/topic/645f7e02-17f8-4b6e-baf4-b43b55a74799";
