@@ -84,15 +84,15 @@ public class StompDeserializer {
         // read body
         if (frame != null) {
             final byte[] body = this.reader.readBlock(frame.getContentLength());
+
             if (body != null) {
                 if (body.length > 0) {
                     frame.setBody(body);
                 }
+                this.reader.next();
             } else {
                 frame = null;
             }
-
-            this.reader.next();
         }
 
         if (frame == null) {

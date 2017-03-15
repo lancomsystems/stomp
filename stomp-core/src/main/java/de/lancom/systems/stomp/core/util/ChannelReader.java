@@ -115,6 +115,19 @@ public class ChannelReader {
     }
 
     /**
+     * Read history content.
+     * @return history
+     */
+    public byte[] readHistory() {
+        final byte[] result = new byte[this.buffer.position()];
+        if (result.length > 0) {
+            this.buffer.position(0);
+            this.buffer.get(result);
+        }
+        return result;
+    }
+
+    /**
      * Discards all remaining empty lines.
      *
      * @throws IOException on io error
@@ -141,7 +154,7 @@ public class ChannelReader {
             if (position >= buffer.capacity()) {
                 final ByteBuffer oldBuffer = this.buffer;
                 oldBuffer.rewind();
-                this.buffer = ByteBuffer.allocate((int) Math.ceil((double) position / BUFFER_SIZE) * BUFFER_SIZE);
+                this.buffer = ByteBuffer.allocate((int) Math.ceil((double) (position + 1) / BUFFER_SIZE) * BUFFER_SIZE);
                 this.buffer.put(oldBuffer);
                 this.buffer.position(oldBuffer.position());
                 this.buffer.limit(oldBuffer.limit());

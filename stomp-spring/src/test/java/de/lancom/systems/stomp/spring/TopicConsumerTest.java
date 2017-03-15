@@ -1,6 +1,7 @@
 package de.lancom.systems.stomp.spring;
 
 import static org.hamcrest.CoreMatchers.is;
+import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
@@ -8,11 +9,13 @@ import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
 
 import de.lancom.systems.stomp.core.client.StompUrl;
+import de.lancom.systems.stomp.core.connection.StompFrameContextInterceptor;
 import de.lancom.systems.stomp.core.wire.StompAckMode;
 import de.lancom.systems.stomp.core.wire.StompFrame;
 import de.lancom.systems.stomp.core.wire.frame.SendFrame;
 import de.lancom.systems.stomp.spring.annotation.Subscription;
 import de.lancom.systems.stomp.test.AsyncHolder;
+import org.hamcrest.CoreMatchers;
 import org.junit.Assert;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -20,13 +23,14 @@ import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Component;
 import org.springframework.test.context.ContextConfiguration;
 
-@ContextConfiguration(classes = { TestConfiguration.class, TopicConsumerTest.TestBed.class})
+@ContextConfiguration(classes = { TestConfiguration.class, TopicConsumerTest.TestBed.class })
 public class TopicConsumerTest extends BaseTest {
 
-    private static final int WAIT_SECONDS = 30;
+    private static final int WAIT_SECONDS = 10;
 
     public static final String URL_TOPIC = "${broker.url}/topic/645f7e02-17f8-4b6e-baf4-b43b55a74784";
     public static final String URL_TOPIC_BIG = "${broker.url}/topic/645f7e02-17f8-4b6e-baf4-b43b55a74799";
+    public static final String URL_TOPIC_BINARY = "${broker.url}/topic/b75f6e54-a84c-4275-9ec5-d4e132ecd613";
 
     @Autowired
     private Environment environment;
@@ -82,7 +86,34 @@ public class TopicConsumerTest extends BaseTest {
 
         assertTrue(testBed.topicHolderBig.expect(1, WAIT_SECONDS, TimeUnit.SECONDS));
         assertThat(testBed.topicHolderBig.getCount(), is(1));
-        Assert.assertArrayEquals(body, testBed.topicHolderBig.get());
+        assertArrayEquals(body, testBed.topicHolderBig.get());
+    }
+
+    @Test
+    public void consumeTopicFrameMass() throws Exception {
+        this.client.removeInterceptor(StompFrameContextInterceptor.class);
+
+        final StompUrl url = StompUrl.parse(environment.resolvePlaceholders(URL_TOPIC_BINARY));
+        final byte[] body = new byte[10000];
+        Arrays.fill(body, (byte) 100);
+
+        for (int index = 0; index < 1000; index++) {
+            final SendFrame sendFrame = new SendFrame(url.getDestination(), body);
+            assertTrue(
+                    "Send failed",
+                    client.transmitFrame(url, sendFrame).await(WAIT_SECONDS, TimeUnit.SECONDS)
+            );
+        }
+
+        testBed.topicHolderBinary.expect(1000, WAIT_SECONDS, TimeUnit.SECONDS);
+        assertThat(testBed.topicHolderBinary.getCount(), is(1000));
+        for (int index = 0; index < 1000; index++) {
+            assertArrayEquals(
+                    String.format("Entry %s has unecected value", index),
+                    body,
+                    testBed.topicHolderBinary.get(index + 1)
+            );
+        }
     }
 
     @Component
@@ -92,6 +123,7 @@ public class TopicConsumerTest extends BaseTest {
         public final AsyncHolder<String> topicHolderA = AsyncHolder.create();
         public final AsyncHolder<String> topicHolderB = AsyncHolder.create();
         public final AsyncHolder<byte[]> topicHolderBig = AsyncHolder.create();
+        public final AsyncHolder<byte[]> topicHolderBinary = AsyncHolder.create();
 
         @Subscription(value = URL_TOPIC, ackMode = StompAckMode.CLIENT_INDIVIDUAL)
         public boolean processTopicFrameGeneral(final StompUrl url, final StompFrame frame) {
@@ -114,6 +146,12 @@ public class TopicConsumerTest extends BaseTest {
         @Subscription(value = URL_TOPIC_BIG, ackMode = StompAckMode.CLIENT_INDIVIDUAL)
         public boolean processTopicFrameBig(final StompFrame frame) {
             topicHolderBig.set(frame.getBody());
+            return true;
+        }
+
+        @Subscription(value = URL_TOPIC_BINARY, ackMode = StompAckMode.CLIENT_INDIVIDUAL)
+        public boolean processTopicFrameBinary(final StompFrame frame) {
+            topicHolderBinary.set(frame.getBody());
             return true;
         }
 
