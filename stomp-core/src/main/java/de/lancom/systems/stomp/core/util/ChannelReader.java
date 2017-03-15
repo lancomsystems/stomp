@@ -143,15 +143,17 @@ public class ChannelReader {
                 oldBuffer.rewind();
                 this.buffer = ByteBuffer.allocate((int) Math.ceil((double) position / BUFFER_SIZE) * BUFFER_SIZE);
                 this.buffer.put(oldBuffer);
-                this.buffer.position(oldBuffer.limit());
+                this.buffer.position(oldBuffer.position());
+                this.buffer.limit(oldBuffer.limit());
             }
+            this.buffer.position(this.buffer.limit());
             this.buffer.limit(this.buffer.capacity());
             this.channel.read(this.buffer);
             this.buffer.flip();
             this.buffer.position(oldPosition);
         }
 
-        return this.buffer.hasRemaining();
+        return this.buffer.limit() > position;
 
     }
 
