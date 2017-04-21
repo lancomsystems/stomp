@@ -35,6 +35,11 @@ subprojects {
         conf['signing.secretKeyRingFile'] = rootProject.file('signing.pgp')
     }
 
+    // use existing property as password
+    def cloudPass = project.properties['cloudPass'] ?: ''
+    if (cloudPass != '') {
+        conf['publish.password'] = cloudPass
+    }
 
     sourceCompatibility = 1.8
     targetCompatibility = 1.8
